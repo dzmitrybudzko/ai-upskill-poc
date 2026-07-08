@@ -1,0 +1,35 @@
+{
+  "name": "Error Handler",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "e1b2c3d4-0001-4000-8000-000000000001",
+      "name": "On Workflow Error",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "briefing@example.com",
+        "toEmail": "you@example.com",
+        "subject": "=❌ Workflow failed: {{ $json.workflow.name }}",
+        "emailFormat": "text",
+        "text": "=Workflow \"{{ $json.workflow.name }}\" failed.\n\nError: {{ $json.execution.error.message }}\nLast node: {{ $json.execution.lastNodeExecuted }}\nExecution: {{ $json.execution.url }}\nTime: {{ $now }}",
+        "options": {}
+      },
+      "id": "e1b2c3d4-0002-4000-8000-000000000002",
+      "name": "Notify Failure",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [220, 300]
+    }
+  ],
+  "connections": {
+    "On Workflow Error": { "main": [ [ { "node": "Notify Failure", "type": "main", "index": 0 } ] ] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {},
+  "meta": {}
+}
