@@ -1,5 +1,20 @@
 # Week 1 — n8n Daily Weather Briefing
 
+## Before importing
+
+Three values in the committed JSON are placeholders. Replace them with your own, either in the
+file before `n8n import:workflow` or in the n8n UI afterwards:
+
+| Placeholder | Where | What to put there |
+| --- | --- | --- |
+| `YOUR_GOOGLE_SHEET_ID` | `daily-briefing.json`, Log to Google Sheets | the id from your sheet's URL |
+| `YOUR_MAILTRAP_INBOX_ID` | both files, HTTP Request URL | your Mailtrap sandbox inbox id |
+| `you@example.com` | both files, `to[].email` | the recipient shown in the email header |
+
+You also need two n8n credentials: a Google Sheets OAuth2 one, and a Header Auth one sending
+`Api-Token: <your Mailtrap API token>`. The credential ids in the JSON are local to the machine
+that produced it; n8n will ask you to re-pick them on import.
+
 `daily-briefing.json` is an n8n workflow that runs every day at 07:00 (schedule trigger),
 fetches current weather for Gdansk from the OpenWeather API, and transforms the response in a
 Code node that computes a `isCritical` flag plus a human-readable `reason` (freezing/heat,
