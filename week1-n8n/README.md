@@ -30,4 +30,12 @@ Error Handler:  On Workflow Error → Notify Failure
 Credentials (Google Sheets OAuth2, Mailtrap Header Auth), the OpenWeather API key, and the
 error-workflow wiring are configured in the n8n UI — see the top-level task checklist.
 The Error Trigger does not fire on manual executions, so testing the error path requires
-activating the workflow and letting a scheduled run fail.
+publishing the workflow and letting a scheduled run fail.
+
+The `errorWorkflow` setting is committed in `daily-briefing.json` rather than picked in the
+UI. On n8n 2.29.8 the Settings → Error Workflow dropdown renders each option with
+`:disabled="item.active === false"`, while `n8n-nodes-base.errorTrigger` sits in
+`NON_ACTIVATABLE_TRIGGER_NODE_TYPES` — so an error-trigger-only workflow can never be
+published, never becomes active, and can never be selected. The restriction is cosmetic:
+`executeErrorWorkflow()` reads `settings.errorWorkflow` and runs the target without checking
+`active`.
