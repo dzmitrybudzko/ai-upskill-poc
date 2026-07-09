@@ -36,6 +36,23 @@ The `errorWorkflow` setting is committed in `daily-briefing.json` rather than pi
 UI. On n8n 2.29.8 the Settings → Error Workflow dropdown renders each option with
 `:disabled="item.active === false"`, while `n8n-nodes-base.errorTrigger` sits in
 `NON_ACTIVATABLE_TRIGGER_NODE_TYPES` — so an error-trigger-only workflow can never be
-published, never becomes active, and can never be selected. The restriction is cosmetic:
-`executeErrorWorkflow()` reads `settings.errorWorkflow` and runs the target without checking
-`active`.
+published, never becomes active, and can never be selected.
+
+Setting `errorWorkflow` is necessary but not sufficient. `WorkflowExecutionService.loadErrorWorkflowData()`
+resolves the error workflow through its `activeVersion` relation and returns `null` — silently,
+with only a log line — when that relation is empty, so the handler never runs and no execution
+row is created. Because an error-trigger-only workflow can never be published, its
+`workflow_entity.activeVersionId` stays `NULL` forever. The fix applied here points that column
+at the workflow's existing `workflow_history` row:
+
+```sql
+UPDATE workflow_entity
+   SET activeVersionId = '<versionId from workflow_history>'
+ WHERE id = 'wf-error-handler-0001';
+```
+
+`active` itself stays `0` — `loadErrorWorkflowData` checks only `activeVersion`, and
+`executeErrorWorkflow` constructs the `Workflow` with `active: true` hard-coded. This lives in
+the n8n database, not in the JSON, so it must be re-applied after a fresh import on n8n 2.29.8.
+Verified end to end: a scheduled failure produced execution `mode=error, status=success` whose
+`Notify Failure` node returned `{"success":true,"message_ids":[...]}` from Mailtrap.
