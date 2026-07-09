@@ -1,30 +1,57 @@
 {
+  "id": "wf-daily-briefing-0001",
   "name": "Daily Weather Briefing",
   "nodes": [
     {
-      "parameters": { "rule": { "interval": [ { "field": "cronExpression", "expression": "0 7 * * *" } ] } },
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
       "id": "a1b2c3d4-0001-4000-8000-000000000001",
       "name": "Every day 07:00",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [0, 300]
+      "position": [
+        0,
+        304
+      ]
     },
     {
       "parameters": {
         "url": "https://api.openweathermap.org/data/2.5/weather",
         "sendQuery": true,
-        "queryParameters": { "parameters": [
-          { "name": "q", "value": "Gdansk,PL" },
-          { "name": "appid", "value": "={{ $env.OPENWEATHER_API_KEY }}" },
-          { "name": "units", "value": "metric" }
-        ] },
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "Gdansk,PL"
+            },
+            {
+              "name": "appid",
+              "value": "={{ $env.OPENWEATHER_API_KEY }}"
+            },
+            {
+              "name": "units",
+              "value": "metric"
+            }
+          ]
+        },
         "options": {}
       },
       "id": "a1b2c3d4-0002-4000-8000-000000000002",
       "name": "Fetch Weather (OpenWeather)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [220, 300]
+      "position": [
+        224,
+        304
+      ]
     },
     {
       "parameters": {
@@ -34,27 +61,172 @@
       "name": "Transform + Flag Critical",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [440, 300]
+      "position": [
+        448,
+        304
+      ]
     },
     {
       "parameters": {
         "operation": "append",
-        "documentId": { "__rl": true, "value": "YOUR_GOOGLE_SHEET_ID", "mode": "id" },
-        "sheetName": { "__rl": true, "value": "gid=0", "mode": "list", "cachedResultName": "Sheet1" },
-        "columns": { "mappingMode": "autoMapInputData", "value": {}, "matchingColumns": [] },
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Лист1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "city",
+              "displayName": "city",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "temp",
+              "displayName": "temp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "feelsLike",
+              "displayName": "feelsLike",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "humidity",
+              "displayName": "humidity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "wind",
+              "displayName": "wind",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gust",
+              "displayName": "gust",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "condition",
+              "displayName": "condition",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "isCritical",
+              "displayName": "isCritical",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reason",
+              "displayName": "reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
         "options": {}
       },
       "id": "a1b2c3d4-0004-4000-8000-000000000004",
       "name": "Log to Google Sheets",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
-      "position": [680, 180]
+      "position": [
+        688,
+        192
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RH46PFpVaY1ZTQ0o",
+          "name": "Google Sheets account"
+        }
+      }
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
-          "conditions": [ { "id": "cond-0001-4000-8000-000000000001", "leftValue": "={{ $json.isCritical }}", "rightValue": "", "operator": { "type": "boolean", "operation": "true", "singleValue": true } } ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-0001-4000-8000-000000000001",
+              "leftValue": "={{ $json.isCritical }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
           "combinator": "and"
         },
         "options": {}
@@ -63,32 +235,96 @@
       "name": "Is Critical?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [680, 420]
+      "position": [
+        688,
+        432
+      ]
     },
     {
       "parameters": {
-        "fromEmail": "briefing@example.com",
-        "toEmail": "you@example.com",
-        "subject": "=⚠️ Weather Alert — {{ $json.city }}: {{ $json.reason }}",
-        "emailFormat": "text",
-        "text": "=Daily briefing for {{ $json.city }} at {{ $json.timestamp }}\n\nCRITICAL: {{ $json.reason }}\n\nTemp: {{ $json.temp }}°C (feels {{ $json.feelsLike }}°C)\nWind: {{ $json.wind }} m/s (gust {{ $json.gust }} m/s)\nCondition: {{ $json.condition }} — {{ $json.description }}",
+        "method": "POST",
+        "url": "https://sandbox.api.mailtrap.io/api/send/YOUR_MAILTRAP_INBOX_ID",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ from: {\"email\":\"daily-briefing@upskill.demo\",\"name\":\"Daily Briefing\"}, to: [{\"email\":\"you@example.com\"}], subject: '\\u26A0\\uFE0F Weather Alert \\u2014 ' + $json.city + ': ' + $json.reason, text: 'Daily briefing for ' + $json.city + ' at ' + $json.timestamp + '\\n\\nCRITICAL: ' + $json.reason + '\\n\\nTemp: ' + $json.temp + '\\u00B0C (feels ' + $json.feelsLike + '\\u00B0C)' + '\\nWind: ' + $json.wind + ' m/s (gust ' + $json.gust + ' m/s)' + '\\nCondition: ' + $json.condition + ' \\u2014 ' + $json.description }) }}",
         "options": {}
       },
       "id": "a1b2c3d4-0006-4000-8000-000000000006",
       "name": "Send Email Alert",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [900, 420]
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        912,
+        432
+      ],
+      "webhookId": "98c67732-3410-411a-ae00-bc9753f3f7f4",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "RdTUTV885zRYlY7J",
+          "name": "Header Auth account"
+        }
+      }
     }
   ],
   "connections": {
-    "Every day 07:00": { "main": [ [ { "node": "Fetch Weather (OpenWeather)", "type": "main", "index": 0 } ] ] },
-    "Fetch Weather (OpenWeather)": { "main": [ [ { "node": "Transform + Flag Critical", "type": "main", "index": 0 } ] ] },
-    "Transform + Flag Critical": { "main": [ [ { "node": "Log to Google Sheets", "type": "main", "index": 0 }, { "node": "Is Critical?", "type": "main", "index": 0 } ] ] },
-    "Is Critical?": { "main": [ [ { "node": "Send Email Alert", "type": "main", "index": 0 } ], [] ] }
+    "Every day 07:00": {
+      "main": [
+        [
+          {
+            "node": "Fetch Weather (OpenWeather)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Weather (OpenWeather)": {
+      "main": [
+        [
+          {
+            "node": "Transform + Flag Critical",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform + Flag Critical": {
+      "main": [
+        [
+          {
+            "node": "Log to Google Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Is Critical?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Critical?": {
+      "main": [
+        [
+          {
+            "node": "Send Email Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
   },
   "active": false,
-  "settings": { "executionOrder": "v1" },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
   "pinData": {},
   "meta": {}
 }

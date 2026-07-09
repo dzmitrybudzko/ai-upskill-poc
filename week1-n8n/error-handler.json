@@ -1,4 +1,5 @@
 {
+  "id": "wf-error-handler-0001",
   "name": "Error Handler",
   "nodes": [
     {
@@ -7,29 +8,55 @@
       "name": "On Workflow Error",
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
-      "position": [0, 300]
+      "position": [
+        0,
+        300
+      ]
     },
     {
       "parameters": {
-        "fromEmail": "briefing@example.com",
-        "toEmail": "you@example.com",
-        "subject": "=❌ Workflow failed: {{ $json.workflow.name }}",
-        "emailFormat": "text",
-        "text": "=Workflow \"{{ $json.workflow.name }}\" failed.\n\nError: {{ $json.execution.error.message }}\nLast node: {{ $json.execution.lastNodeExecuted }}\nExecution: {{ $json.execution.url }}\nTime: {{ $now }}",
+        "method": "POST",
+        "url": "https://sandbox.api.mailtrap.io/api/send/YOUR_MAILTRAP_INBOX_ID",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ from: {\"email\":\"daily-briefing@upskill.demo\",\"name\":\"Daily Briefing\"}, to: [{\"email\":\"you@example.com\"}], subject: '\\u274C Workflow failed: ' + $json.workflow.name, text: 'Workflow \\\"' + $json.workflow.name + '\\\" failed.' + '\\n\\nError: ' + $json.execution.error.message + '\\nLast node: ' + $json.execution.lastNodeExecuted + '\\nExecution: ' + $json.execution.url + '\\nTime: ' + $now.toISO() }) }}",
         "options": {}
       },
       "id": "e1b2c3d4-0002-4000-8000-000000000002",
       "name": "Notify Failure",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
-      "position": [220, 300]
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "RdTUTV885zRYlY7J",
+          "name": "Header Auth account"
+        }
+      }
     }
   ],
   "connections": {
-    "On Workflow Error": { "main": [ [ { "node": "Notify Failure", "type": "main", "index": 0 } ] ] }
+    "On Workflow Error": {
+      "main": [
+        [
+          {
+            "node": "Notify Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "active": false,
-  "settings": { "executionOrder": "v1" },
+  "settings": {
+    "executionOrder": "v1"
+  },
   "pinData": {},
   "meta": {}
 }
