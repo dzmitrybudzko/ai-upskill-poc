@@ -1,0 +1,340 @@
+{
+  "meta": {
+    "description": "Golden evaluation set for the grounded RAG chatbot over GDPR (Reg. 2016/679) and the EU AI Act (Reg. 2024/1689). Hand-authored acceptance criteria, written before the build. ~40 questions in four groups.",
+    "version": "1.0",
+    "groups": {
+      "gdpr_factual": "Answerable from GDPR articles alone.",
+      "aiact_factual": "Answerable from EU AI Act articles/annexes alone.",
+      "cross_regulation": "Require retrieving from BOTH regulations; a good answer cites articles from each.",
+      "refusal": "Out of corpus or asking for legal advice/assessment; the assistant must decline and state what it does cover."
+    },
+    "expected_sources_semantics": "Article/annex-level canonical ids, NOT exact chunk ids. 'gdpr-art-6' matches any chunk whose regulation=GDPR and article_number=6 (any paragraph/point split). 'aiact-anx-III' matches any chunk of AI Act Annex III. This keeps the labels stable regardless of paragraph-level chunking. For refusal entries, expected_sources is empty.",
+    "expected_behavior_values": ["answer", "refuse"],
+    "notes": "expected_sources lists the PRIMARY sources a grounded answer must rely on; retrieval may legitimately surface adjacent articles. Judge/retrieval metrics are defined by the eval harness (later step)."
+  },
+  "questions": [
+    {
+      "id": "g-001",
+      "group": "gdpr_factual",
+      "question": "What are the lawful bases for processing personal data under the GDPR?",
+      "expected_sources": ["gdpr-art-6"],
+      "expected_behavior": "answer",
+      "notes": "Art 6(1)(a)-(f): consent, contract, legal obligation, vital interests, public task, legitimate interests."
+    },
+    {
+      "id": "g-002",
+      "group": "gdpr_factual",
+      "question": "What are 'special categories' of personal data, and is processing them allowed?",
+      "expected_sources": ["gdpr-art-9"],
+      "expected_behavior": "answer",
+      "notes": "Art 9: prohibition on processing sensitive data (health, biometrics, religion, etc.) with exceptions in 9(2)."
+    },
+    {
+      "id": "g-003",
+      "group": "gdpr_factual",
+      "question": "What conditions must be met for consent to be valid under the GDPR?",
+      "expected_sources": ["gdpr-art-7"],
+      "expected_behavior": "answer",
+      "notes": "Art 7: demonstrable, freely given, distinguishable request, withdrawable. Definition of consent is in Art 4(11)."
+    },
+    {
+      "id": "g-004",
+      "group": "gdpr_factual",
+      "question": "When does a data subject have the right to erasure ('right to be forgotten')?",
+      "expected_sources": ["gdpr-art-17"],
+      "expected_behavior": "answer",
+      "notes": "Art 17: grounds for erasure and exceptions."
+    },
+    {
+      "id": "g-005",
+      "group": "gdpr_factual",
+      "question": "What information must a controller provide to individuals when it collects personal data directly from them?",
+      "expected_sources": ["gdpr-art-13"],
+      "expected_behavior": "answer",
+      "notes": "Art 13: identity of controller, purposes, legal basis, recipients, retention, rights, etc."
+    },
+    {
+      "id": "g-006",
+      "group": "gdpr_factual",
+      "question": "What can a data subject obtain when exercising their right of access?",
+      "expected_sources": ["gdpr-art-15"],
+      "expected_behavior": "answer",
+      "notes": "Art 15: confirmation of processing, a copy of the data, and the accompanying information."
+    },
+    {
+      "id": "g-007",
+      "group": "gdpr_factual",
+      "question": "What is the right to data portability and when does it apply?",
+      "expected_sources": ["gdpr-art-20"],
+      "expected_behavior": "answer",
+      "notes": "Art 20: structured, commonly used, machine-readable format; applies to consent/contract basis and automated processing."
+    },
+    {
+      "id": "g-008",
+      "group": "gdpr_factual",
+      "question": "Within what timeframe must a personal data breach be notified to the supervisory authority?",
+      "expected_sources": ["gdpr-art-33"],
+      "expected_behavior": "answer",
+      "notes": "Art 33: without undue delay and where feasible within 72 hours of becoming aware."
+    },
+    {
+      "id": "g-009",
+      "group": "gdpr_factual",
+      "question": "When is a data protection impact assessment (DPIA) required?",
+      "expected_sources": ["gdpr-art-35"],
+      "expected_behavior": "answer",
+      "notes": "Art 35: high risk to rights and freedoms; e.g. systematic extensive profiling, large-scale special categories, systematic monitoring of public areas."
+    },
+    {
+      "id": "g-010",
+      "group": "gdpr_factual",
+      "question": "When must an organisation designate a data protection officer (DPO)?",
+      "expected_sources": ["gdpr-art-37"],
+      "expected_behavior": "answer",
+      "notes": "Art 37: public authority; core activities require regular systematic monitoring at scale; or large-scale special categories."
+    },
+    {
+      "id": "g-011",
+      "group": "gdpr_factual",
+      "question": "What does 'data protection by design and by default' require?",
+      "expected_sources": ["gdpr-art-25"],
+      "expected_behavior": "answer",
+      "notes": "Art 25: appropriate technical and organisational measures; by default only necessary data processed."
+    },
+    {
+      "id": "g-012",
+      "group": "gdpr_factual",
+      "question": "What rules apply to solely automated decision-making that produces legal or similarly significant effects on a person?",
+      "expected_sources": ["gdpr-art-22"],
+      "expected_behavior": "answer",
+      "notes": "Art 22: general prohibition with exceptions (contract, law, explicit consent) and safeguards."
+    },
+
+    {
+      "id": "a-001",
+      "group": "aiact_factual",
+      "question": "Which AI practices are prohibited under the EU AI Act?",
+      "expected_sources": ["aiact-art-5"],
+      "expected_behavior": "answer",
+      "notes": "Art 5: e.g. manipulative/subliminal techniques, social scoring, untargeted facial scraping, certain biometric categorisation and real-time remote biometric identification."
+    },
+    {
+      "id": "a-002",
+      "group": "aiact_factual",
+      "question": "How is an AI system classified as high-risk under the AI Act?",
+      "expected_sources": ["aiact-art-6", "aiact-anx-III"],
+      "expected_behavior": "answer",
+      "notes": "Art 6: safety component under Annex I harmonisation legislation, or use-case listed in Annex III."
+    },
+    {
+      "id": "a-003",
+      "group": "aiact_factual",
+      "question": "What obligations apply to providers of high-risk AI systems?",
+      "expected_sources": ["aiact-art-16"],
+      "expected_behavior": "answer",
+      "notes": "Art 16: compliance with Section 2 requirements, quality management, technical documentation, conformity assessment, registration, corrective action, etc."
+    },
+    {
+      "id": "a-004",
+      "group": "aiact_factual",
+      "question": "What must a risk management system for a high-risk AI system include?",
+      "expected_sources": ["aiact-art-9"],
+      "expected_behavior": "answer",
+      "notes": "Art 9: continuous iterative process across the lifecycle; identify/evaluate/mitigate risks; testing."
+    },
+    {
+      "id": "a-005",
+      "group": "aiact_factual",
+      "question": "What data governance requirements apply to training, validation and testing data for high-risk AI systems?",
+      "expected_sources": ["aiact-art-10"],
+      "expected_behavior": "answer",
+      "notes": "Art 10: relevant, representative, error-free/complete to the extent possible; bias examination; data governance practices."
+    },
+    {
+      "id": "a-006",
+      "group": "aiact_factual",
+      "question": "What are the human oversight requirements for high-risk AI systems?",
+      "expected_sources": ["aiact-art-14"],
+      "expected_behavior": "answer",
+      "notes": "Art 14: design enabling effective oversight by natural persons; ability to intervene, interpret output, stop the system."
+    },
+    {
+      "id": "a-007",
+      "group": "aiact_factual",
+      "question": "What does the AI Act require regarding accuracy, robustness and cybersecurity of high-risk AI systems?",
+      "expected_sources": ["aiact-art-15"],
+      "expected_behavior": "answer",
+      "notes": "Art 15: appropriate levels of accuracy, robustness and cybersecurity throughout the lifecycle; resilience to errors and attacks."
+    },
+    {
+      "id": "a-008",
+      "group": "aiact_factual",
+      "question": "What obligations does the AI Act place on deployers of high-risk AI systems?",
+      "expected_sources": ["aiact-art-26"],
+      "expected_behavior": "answer",
+      "notes": "Art 26: use per instructions, human oversight, monitor operation, keep logs, inform affected persons where relevant."
+    },
+    {
+      "id": "a-009",
+      "group": "aiact_factual",
+      "question": "What transparency obligations apply to chatbots, deepfakes and other AI that interacts with or generates content for people?",
+      "expected_sources": ["aiact-art-50"],
+      "expected_behavior": "answer",
+      "notes": "Art 50: inform people they are interacting with AI; mark synthetic content and deepfakes."
+    },
+    {
+      "id": "a-010",
+      "group": "aiact_factual",
+      "question": "What obligations apply to providers of general-purpose AI (GPAI) models?",
+      "expected_sources": ["aiact-art-53"],
+      "expected_behavior": "answer",
+      "notes": "Art 53: technical documentation, information to downstream providers, copyright policy, training-content summary."
+    },
+    {
+      "id": "a-011",
+      "group": "aiact_factual",
+      "question": "What penalties can be imposed for infringing the EU AI Act?",
+      "expected_sources": ["aiact-art-99"],
+      "expected_behavior": "answer",
+      "notes": "Art 99: administrative fines up to fixed ceilings / percentage of worldwide annual turnover depending on the infringement."
+    },
+    {
+      "id": "a-012",
+      "group": "aiact_factual",
+      "question": "Which use cases are considered high-risk in Annex III of the AI Act?",
+      "expected_sources": ["aiact-anx-III", "aiact-art-6"],
+      "expected_behavior": "answer",
+      "notes": "Annex III: biometrics, critical infrastructure, education, employment, essential services, law enforcement, migration, administration of justice."
+    },
+
+    {
+      "id": "c-001",
+      "group": "cross_regulation",
+      "question": "We are building an AI model that scores individuals using their personal data. What do both the GDPR and the EU AI Act require?",
+      "expected_sources": ["gdpr-art-22", "gdpr-art-6", "aiact-art-6", "aiact-anx-III"],
+      "expected_behavior": "answer",
+      "notes": "GDPR: lawful basis (Art 6) and rules on automated decision-making/profiling (Art 22). AI Act: high-risk classification (Art 6 + Annex III) if it falls under a listed use case."
+    },
+    {
+      "id": "c-002",
+      "group": "cross_regulation",
+      "question": "What obligations arise under both regulations for an AI system used to screen job applicants automatically?",
+      "expected_sources": ["gdpr-art-22", "aiact-anx-III", "aiact-art-6"],
+      "expected_behavior": "answer",
+      "notes": "Employment/recruitment is an Annex III high-risk area (AI Act Art 6); GDPR Art 22 governs automated decisions and Art 6 the lawful basis."
+    },
+    {
+      "id": "c-003",
+      "group": "cross_regulation",
+      "question": "A system performs real-time biometric identification of people in public spaces. How do the GDPR and the AI Act each treat this?",
+      "expected_sources": ["aiact-art-5", "aiact-anx-III", "gdpr-art-9"],
+      "expected_behavior": "answer",
+      "notes": "AI Act: real-time remote biometric identification is largely prohibited (Art 5) and biometrics are high-risk (Annex III). GDPR: biometric data for identification is a special category (Art 9)."
+    },
+    {
+      "id": "c-004",
+      "group": "cross_regulation",
+      "question": "How do the roles of 'controller' and 'processor' under the GDPR relate to 'provider' and 'deployer' under the AI Act?",
+      "expected_sources": ["gdpr-art-4", "aiact-art-3"],
+      "expected_behavior": "answer",
+      "notes": "Definitions: GDPR Art 4 (controller/processor), AI Act Art 3 (provider/deployer). Distinct role frameworks that can overlap for the same actor."
+    },
+    {
+      "id": "c-005",
+      "group": "cross_regulation",
+      "question": "When deploying a customer-facing AI chatbot that uses personal data, what transparency duties apply under both regimes?",
+      "expected_sources": ["aiact-art-50", "gdpr-art-13"],
+      "expected_behavior": "answer",
+      "notes": "AI Act Art 50: disclose that the user is interacting with AI. GDPR Art 13/14: inform about data processing. Both transparency duties apply."
+    },
+    {
+      "id": "c-006",
+      "group": "cross_regulation",
+      "question": "What impact assessments may be required before deploying a high-risk AI system that processes personal data?",
+      "expected_sources": ["gdpr-art-35", "aiact-art-27"],
+      "expected_behavior": "answer",
+      "notes": "GDPR Art 35: DPIA. AI Act Art 27: fundamental rights impact assessment (FRIA) for certain deployers of high-risk AI."
+    },
+    {
+      "id": "c-007",
+      "group": "cross_regulation",
+      "question": "What are the maximum administrative fines a company could face under the GDPR and under the AI Act?",
+      "expected_sources": ["gdpr-art-83", "aiact-art-99"],
+      "expected_behavior": "answer",
+      "notes": "GDPR Art 83 and AI Act Art 99 each set fine ceilings expressed as fixed amounts or a percentage of worldwide annual turnover."
+    },
+    {
+      "id": "c-008",
+      "group": "cross_regulation",
+      "question": "We want to use customers' personal data to train a high-risk AI system. What do the two regulations require regarding the data?",
+      "expected_sources": ["aiact-art-10", "gdpr-art-6", "gdpr-art-5"],
+      "expected_behavior": "answer",
+      "notes": "AI Act Art 10: data governance/quality for training data. GDPR: lawful basis (Art 6) and processing principles incl. purpose limitation/minimisation (Art 5)."
+    },
+
+    {
+      "id": "r-001",
+      "group": "refusal",
+      "question": "What are the consumer rights under the California Consumer Privacy Act (CCPA)?",
+      "expected_sources": [],
+      "expected_behavior": "refuse",
+      "notes": "US state law, not in the corpus. Assistant should decline and state it only covers GDPR and the EU AI Act."
+    },
+    {
+      "id": "r-002",
+      "group": "refusal",
+      "question": "What does the German Federal Data Protection Act (BDSG) add on top of the GDPR?",
+      "expected_sources": [],
+      "expected_behavior": "refuse",
+      "notes": "National implementing law, explicitly out of scope. Decline."
+    },
+    {
+      "id": "r-003",
+      "group": "refusal",
+      "question": "What did the Court of Justice rule in the Schrems II case about EU-US data transfers?",
+      "expected_sources": [],
+      "expected_behavior": "refuse",
+      "notes": "Case law, out of scope. The corpus is regulation text only."
+    },
+    {
+      "id": "r-004",
+      "group": "refusal",
+      "question": "What do the EDPB guidelines say about obtaining valid cookie consent?",
+      "expected_sources": [],
+      "expected_behavior": "refuse",
+      "notes": "Guidelines/opinions (and ePrivacy) are out of scope. Decline; may note GDPR consent is in Art 7 but not answer the guidelines question."
+    },
+    {
+      "id": "r-005",
+      "group": "refusal",
+      "question": "For our email marketing, should we rely on consent or on legitimate interest? Which is better for us?",
+      "expected_sources": [],
+      "expected_behavior": "refuse",
+      "notes": "Asks for a recommendation/legal advice. Retrieval may surface Art 6/7, but the assistant reports what the text says and must not advise which to choose."
+    },
+    {
+      "id": "r-006",
+      "group": "refusal",
+      "question": "Here is our data flow. Is our company GDPR compliant?",
+      "expected_sources": [],
+      "expected_behavior": "refuse",
+      "notes": "Compliance assessment / advice, out of scope. Decline and explain the tool reports what the regulation text says, not compliance verdicts."
+    },
+    {
+      "id": "r-007",
+      "group": "refusal",
+      "question": "What is the best programming language to build our backend service?",
+      "expected_sources": [],
+      "expected_behavior": "refuse",
+      "notes": "Unrelated to the corpus entirely. Decline and state the assistant's scope."
+    },
+    {
+      "id": "r-008",
+      "group": "refusal",
+      "question": "How does the UK GDPR differ from the EU GDPR after Brexit?",
+      "expected_sources": [],
+      "expected_behavior": "refuse",
+      "notes": "UK law is a separate instrument outside the corpus (EU GDPR + EU AI Act only). Decline."
+    }
+  ]
+}
