@@ -2,3 +2,7 @@ node_modules/
 .env
 *.local
 .DS_Store
+
+# week2-poc: rebuildable artifacts, never committed (Principle VII)
+week2-poc/data/index/
+week2-poc/evals/results/
