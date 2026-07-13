@@ -1,0 +1,16 @@
+{
+  "name": "eu-reg-rag-poc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Grounded RAG chatbot over GDPR and the EU AI Act (PoC). Ingestion tooling only at this stage.",
+  "scripts": {
+    "parse-corpus": "tsx scripts/parse-corpus.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "cheerio": "^1.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
