@@ -15,10 +15,10 @@
 
 ## Requirement Clarity
 
-- [ ] CHK006 - Is "substantive claim" defined so it is unambiguous which sentences require a citation versus connective/framing prose? [Ambiguity, Spec §FR-001/§FR-002]
+- [x] CHK006 - Is "substantive claim" defined so it is unambiguous which sentences require a citation versus connective/framing prose? RESOLVED 2026-07-13: FR-002 now defines "substantive claim". [Ambiguity, Spec §FR-001/§FR-002]
 - [ ] CHK007 - Is the required citation granularity specified (article-level vs. paragraph/point-level, e.g. must it reach "Art. 6(1)(f)" or is "Art. 6" sufficient)? [Clarity, Spec §FR-002]
 - [ ] CHK008 - Is "retrieval too weak to support an answer" quantified or given an objective criterion at the requirements level, rather than left to implementation? [Ambiguity, Spec §FR-004]
-- [ ] CHK009 - Are the criteria that classify a question as "advice-framed" specified, so the decline-to-recommend rule can be applied consistently? [Ambiguity, Spec §FR-005]
+- [x] CHK009 - Are the criteria that classify a question as "advice-framed" specified, so the decline-to-recommend rule can be applied consistently? RESOLVED 2026-07-13: FR-005 now defines "advice-framed". [Ambiguity, Spec §FR-005]
 - [ ] CHK010 - Is the required content of a refusal message specified (must name the covered corpus: GDPR + EU AI Act, English)? [Clarity, Spec §FR-004]
 - [ ] CHK011 - Is "working link" defined measurably (what makes a citation link valid/verifiable)? [Measurability, Spec §FR-002]
 
