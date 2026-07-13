@@ -8,6 +8,14 @@
 
 **Input**: User description: "A grounded RAG chatbot over EU regulations — GDPR (2016/679) and the EU AI Act (2024/1689). It answers compliance questions using only retrieved passages from the actual regulation texts, cites the exact article it relied on, and refuses when the answer is not in the corpus. It is an information tool over regulation text, not legal advice. Core: structure-aware ingestion (done), semantic retrieval, grounded cited synthesis, out-of-corpus refusal, automated eval harness. High value: metadata filtering, cross-regulation synthesis, baseline comparator. Stretch: query rewriting/reranking, minimal web UI."
 
+## Clarifications
+
+### Session 2026-07-13
+
+- Q: Should the assistant be single-turn Q&A or multi-turn conversational? → A: Single-turn Q&A — each question is answered independently, no chat history; multi-turn memory is out of scope.
+- Q: Which source types does retrieval search by default (before any user filter)? → A: Articles + annexes by default; recitals are opt-in via filter.
+- Q: For an advice-framed question whose underlying text IS in the corpus, what should the assistant do? → A: State what the regulation text says about the options but explicitly decline to recommend one; this is treated as a correct refusal.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Grounded, cited answer to a compliance question (Priority: P1)
@@ -146,9 +154,9 @@ A user interacts with the assistant through a minimal web UI instead of the comm
 - **FR-002**: The system MUST cite, for every answer, the specific article/paragraph/annex each claim relies on, with a working link to the source. An uncited substantive claim MUST NOT appear.
 - **FR-003**: The system MUST NOT cite an article/annex that does not exist in the corpus.
 - **FR-004**: The system MUST decline to answer when the question is outside the corpus or when retrieval is too weak to support an answer, and MUST state what it does cover.
-- **FR-005**: The system MUST decline requests for legal advice, recommendations, risk assessments, or compliance verdicts, and MUST display a "not legal advice" notice in both the system behaviour and the user-facing surface.
+- **FR-005**: The system MUST decline requests for legal advice, recommendations, risk assessments, or compliance verdicts, and MUST display a "not legal advice" notice in both the system behaviour and the user-facing surface. When such a request's underlying text IS in the corpus, the system MAY state what the regulation text says about the available options but MUST NOT recommend one; this is treated as a refusal, not an answer.
 - **FR-006**: The system MUST retrieve relevant passages for a user question from the corpus of GDPR and EU AI Act articles, recitals, and annexes.
-- **FR-007**: The system MUST support restricting retrieval by metadata — at minimum by regulation, and by source type (articles only, or including recitals and/or annexes).
+- **FR-007**: The system MUST search articles and annexes by default; recitals MUST be excluded unless the user opts in. The system MUST support restricting retrieval by metadata — at minimum by regulation, and by source type (articles only, or including recitals and/or annexes).
 - **FR-008**: The system MUST support questions that require both regulations, retrieving from each and synthesizing an answer that cites sources from both.
 - **FR-009**: The system MUST provide an evaluation harness that scores the assistant against the golden set and reports retrieval metrics (hit-rate@k, MRR) and judged answer-quality metrics (groundedness, citation correctness, relevance, refusal accuracy), both per-question and aggregate.
 - **FR-010**: The evaluation harness MUST make regressions in the aggregate metrics visible so a change that lowers quality can be identified and blocked from merge.
@@ -156,6 +164,7 @@ A user interacts with the assistant through a minimal web UI instead of the comm
 - **FR-012**: The system MAY provide optional retrieval enhancements (query rewriting and/or reranking) whose effect on the golden-set metrics is measured before/after.
 - **FR-013**: The system MUST expose a usable demo surface; a command-line interface is sufficient, with a minimal web interface as an optional enhancement.
 - **FR-014**: Answers, citations, refusals, and the not-legal-advice notice MUST be rendered clearly on whichever surface is used.
+- **FR-015**: The system MUST treat each question independently (single-turn). Maintaining multi-turn conversational context or chat history is out of scope.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -189,6 +198,7 @@ The following are explicitly excluded from this feature:
 - Languages other than English.
 - Authentication, multi-tenancy, deployment, or scaling.
 - Fine-tuning or model training.
+- Multi-turn conversational memory / chat history (the assistant is single-turn).
 
 ## Assumptions
 
