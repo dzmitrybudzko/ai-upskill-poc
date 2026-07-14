@@ -15,6 +15,7 @@ import { loadCorpus } from "../corpus/corpus.js";
 import { buildIndex, INDEX_PATH } from "../retrieval/build-index.js";
 import { retrieve } from "../retrieval/retriever.js";
 import { answer } from "../rag/answer.js";
+import { formatReport, runEval } from "../eval/run-eval.js";
 
 /** Missing/invalid DIAL_* env → fail fast, never a silent fallback (cli.md). */
 function requireConfig(): Config {
@@ -53,7 +54,7 @@ program
     const cfg = requireConfig();
     const { llm, embedder } = createDialProviders(cfg);
     const res = await answer(
-      { question, k: cfg.k },
+      { question, k: cfg.k, refusalMinScore: cfg.refusalMinScore },
       { retriever: retrieve, llm, embedder },
     );
 
@@ -68,6 +69,33 @@ program
       }
     }
     console.log(`\n${res.not_legal_advice_notice}`);
+  });
+
+program
+  .command("eval")
+  .description("Run the golden set and gate on the Success Criteria (exits non-zero on failure)")
+  .option("--group <name>", "run one group only (gdpr_factual | aiact_factual | cross_regulation | refusal)")
+  .option("-k <n>", "retrieval depth", (v) => parseInt(v, 10))
+  .action(async (opts: { group?: string; k?: number }) => {
+    const cfg = requireConfig();
+    const { llm, embedder } = createDialProviders(cfg);
+    const k = opts.k ?? cfg.k;
+    let done = 0;
+    const report = await runEval(
+      {
+        k,
+        refusalMinScore: cfg.refusalMinScore,
+        group: opts.group,
+        onCase: (r) => {
+          done += 1;
+          const mark = r.error ? "✗ ERROR" : r.behavior_match ? "✓" : "✗";
+          console.log(`  ${String(done).padStart(2)}. ${r.question_id} [${r.group}] ${mark}`);
+        },
+      },
+      { retriever: retrieve, llm, embedder },
+    );
+    console.log(formatReport(report));
+    process.exitCode = report.passed ? 0 : 1;
   });
 
 program.parseAsync().catch((err) => {

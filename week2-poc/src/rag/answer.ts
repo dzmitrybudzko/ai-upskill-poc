@@ -19,6 +19,11 @@ export interface QuestionRequest {
   question: string;
   filters?: RetrievalFilters;
   k?: number;
+  /**
+   * Cosine-similarity floor below which retrieval counts as "too weak" and the
+   * assistant refuses (FR-004). Injected from config; 0 disables the floor.
+   */
+  refusalMinScore?: number;
 }
 
 export interface Citation {
@@ -48,7 +53,7 @@ export interface AnswerDeps {
 }
 
 const SynthesisResponse = z.object({
-  mode: z.enum(["answer", "refuse"]),
+  mode: z.enum(["answer", "refuse", "advice"]),
   answer: z.string(),
   cited_ids: z.array(z.string()).default([]),
 });
@@ -76,19 +81,26 @@ export function validateCitations(
   return { citations, rejected };
 }
 
-/** Replace valid inline [id] markers with [label]; strip rejected ones. */
+/**
+ * Replace inline [id] markers with [label]; strip rejected ids. Models may
+ * group several ids in one bracket ("[id-a, id-b]"), so brackets are rewritten
+ * token-wise; brackets that reference no known id are left untouched.
+ */
 export function renderInlineCitations(
   text: string,
   citations: Citation[],
   rejected: string[],
 ): string {
-  let out = text;
-  for (const c of citations) {
-    out = out.replaceAll(`[${c.chunk_id}]`, `[${c.label}]`);
-  }
-  for (const id of rejected) {
-    out = out.replaceAll(`[${id}]`, "");
-  }
+  const labelById = new Map(citations.map((c) => [c.chunk_id, c.label]));
+  const rejectedIds = new Set(rejected);
+  const out = text.replace(/\[([^\[\]]+)\]/g, (match, inner: string) => {
+    const tokens = inner.split(",").map((t) => t.trim());
+    if (!tokens.some((t) => labelById.has(t) || rejectedIds.has(t))) return match;
+    const labels = tokens
+      .filter((t) => !rejectedIds.has(t))
+      .map((t) => labelById.get(t) ?? t);
+    return labels.length ? `[${[...new Set(labels)].join("; ")}]` : "";
+  });
   return out.replace(/ {2,}/g, " ").replace(/ +([.,;:])/g, "$1");
 }
 
@@ -109,10 +121,17 @@ export async function answer(req: QuestionRequest, deps: AnswerDeps): Promise<An
     deps.embedder,
   );
 
-  // Empty retrieval → refuse, never fabricate (Principle III; threshold branch is T018).
+  // FR-004: refuse when retrieval is too weak — nothing retrieved, or the
+  // top-ranked score is below the configured floor. Never fabricate.
   if (retrieved.length === 0) {
     return refusal(
       `I can't answer this from the corpus — nothing relevant was retrieved. ${COVERAGE_STATEMENT}`,
+      retrieved,
+    );
+  }
+  if (retrieved[0].score < (req.refusalMinScore ?? 0)) {
+    return refusal(
+      `I can't answer this from the corpus — the retrieved passages are only weakly related to the question. ${COVERAGE_STATEMENT}`,
       retrieved,
     );
   }
@@ -135,6 +154,15 @@ export async function answer(req: QuestionRequest, deps: AnswerDeps): Promise<An
   if (parsed.mode === "refuse") {
     const explanation = parsed.answer.trim();
     return refusal(explanation ? `${explanation} ${COVERAGE_STATEMENT}` : COVERAGE_STATEMENT, retrieved);
+  }
+
+  // FR-005: advice-framed with in-corpus text — state what the text says,
+  // decline to recommend; treated as a refusal, not an answer. Sources are
+  // rendered inline as labels; the citations list stays empty (data-model.md:
+  // refusals carry no Citation entries).
+  if (parsed.mode === "advice") {
+    const { citations, rejected } = validateCitations(parsed.cited_ids, retrieved);
+    return refusal(renderInlineCitations(parsed.answer, citations, rejected), retrieved);
   }
 
   const { citations, rejected } = validateCitations(parsed.cited_ids, retrieved);

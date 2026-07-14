@@ -67,9 +67,9 @@ description: "Task list for feature 001 — Grounded RAG Assistant over GDPR & t
 
 **Independent test**: the refusal group of the golden set is declined with a coverage statement and no fabricated citation.
 
-- [ ] T018 [US2] Add refusal branch to `answer()`: refuse when no results or top score < `REFUSAL_MIN_SCORE`, with a coverage statement (GDPR + EU AI Act, English) in `src/rag/answer.ts`
-- [ ] T019 [US2] Implement advice-framing handling: when text is in-corpus, state what the text says but decline to recommend, marked as refusal (FR-005, MUST) in `src/rag/answer.ts`
-- [ ] T020 [P] [US2] Unit test refusal paths (empty retrieval, sub-threshold score, advice-framed) in `tests/refusal.test.ts`
+- [X] T018 [US2] Add refusal branch to `answer()`: refuse when no results or top score < `REFUSAL_MIN_SCORE`, with a coverage statement (GDPR + EU AI Act, English) in `src/rag/answer.ts`
+- [X] T019 [US2] Implement advice-framing handling: when text is in-corpus, state what the text says but decline to recommend, marked as refusal (FR-005, MUST) in `src/rag/answer.ts`
+- [X] T020 [P] [US2] Unit test refusal paths (empty retrieval, sub-threshold score, advice-framed) in `tests/refusal.test.ts`
 
 **Checkpoint**: refusals are explicit, scoped, and fabrication-free.
 
@@ -81,11 +81,11 @@ description: "Task list for feature 001 — Grounded RAG Assistant over GDPR & t
 
 **Independent test**: `rag eval` prints per-group + aggregate metrics and exits non-zero if any Success Criterion fails.
 
-- [ ] T021 [P] [US3] Implement retrieval metrics (hit-rate@k, MRR) via article/annex-level metadata match to `expected_sources` in `src/eval/metrics.ts`
-- [ ] T022 [US3] Define judge rubrics (objective criteria for groundedness, citation correctness, relevance, refusal accuracy) and implement LLM judge with zod-structured output in `src/eval/judge.ts` (resolves CHK016)
-- [ ] T023 [US3] Implement `runEval()` — run golden set end-to-end, aggregate per group, compare to Success Criteria thresholds, write `evals/results/`, non-zero exit on failure in `src/eval/run-eval.ts`
-- [ ] T024 [P] [US3] Unit test metric functions (hit-rate@k, MRR, fabricated-citation counter) in `tests/metrics.test.ts`
-- [ ] T025 [US3] Implement `rag eval [--group]` CLI command in `src/cli/main.ts`
+- [X] T021 [P] [US3] Implement retrieval metrics (hit-rate@k, MRR) via article/annex-level metadata match to `expected_sources` in `src/eval/metrics.ts`
+- [X] T022 [US3] Define judge rubrics (objective criteria for groundedness, citation correctness, relevance, refusal accuracy) and implement LLM judge with zod-structured output in `src/eval/judge.ts` (resolves CHK016)
+- [X] T023 [US3] Implement `runEval()` — run golden set end-to-end, aggregate per group, compare to Success Criteria thresholds, write `evals/results/`, non-zero exit on failure in `src/eval/run-eval.ts`
+- [X] T024 [P] [US3] Unit test metric functions (hit-rate@k, MRR, fabricated-citation counter) in `tests/metrics.test.ts`
+- [X] T025 [US3] Implement `rag eval [--group]` CLI command in `src/cli/main.ts`
 
 **Checkpoint**: the acceptance gate runs and reports; Principle VI enforceable.
 
