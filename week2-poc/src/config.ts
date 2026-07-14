@@ -17,8 +17,10 @@ const EnvSchema = z.object({
   DIAL_CHAT_MODEL: z.string().min(1, "DIAL_CHAT_MODEL is required"),
   DIAL_EMBEDDING_MODEL: z.string().min(1, "DIAL_EMBEDDING_MODEL is required"),
   RAG_K: z.coerce.number().int().positive().default(5),
-  // Provisional similarity floor for refusal (FR-004); calibrated in T037.
-  REFUSAL_MIN_SCORE: z.coerce.number().min(0).max(1).default(0.25),
+  // Similarity floor for refusal (FR-004), calibrated on the golden set (T037):
+  // catches clearly-off-topic questions; near-topic refusals and advice-framed
+  // questions (top-1 ≈ 0.45–0.54) are left to synthesis-time model judgment.
+  REFUSAL_MIN_SCORE: z.coerce.number().min(0).max(1).default(0.4),
 });
 
 export type Config = {

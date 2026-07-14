@@ -51,8 +51,15 @@ const REG_NAME: Record<Regulation, string> = { GDPR: "GDPR", AI_ACT: "AI Act" };
 
 /**
  * Human citation label from chunk metadata, e.g. "GDPR Art. 6(1)", "AI Act
- * Annex III", "GDPR Recital 47". Paragraph-level suffix is applied when the
- * ingestion split the article per paragraph (granularity revisited in T036).
+ * Annex III", "GDPR Recital 47".
+ *
+ * Citation granularity (decision, T036/CHK007): citations are as fine as the
+ * ingestion chunking — paragraph-level ("GDPR Art. 6(1)") where a long article
+ * was split per numbered paragraph, article-level otherwise, annex-level for
+ * annexes. Rationale: a citation always points at exactly the chunk that
+ * grounded the claim (never broader), while eval source-matching stays at
+ * article/annex level (metrics.ts sourceKey), robust to the split. The judge
+ * sees the same labels via this function, so rendering and judging agree.
  */
 export function citationLabel(chunk: Chunk): string {
   const reg = REG_NAME[chunk.regulation];
@@ -69,6 +76,17 @@ export function citationLabel(chunk: Chunk): string {
       return `${reg} Recital ${n}`;
     }
   }
+}
+
+/**
+ * Article/annex-level key for a chunk (e.g. "gdpr-art-6", "aiact-anx-III") —
+ * the unit of the golden set's expected_sources and of retrieval diversity.
+ */
+export function sourceKey(chunk: Chunk): string {
+  const prefix = chunk.regulation === "GDPR" ? "gdpr" : "aiact";
+  if (chunk.type === "annex") return `${prefix}-anx-${chunk.annex_number}`;
+  if (chunk.type === "article") return `${prefix}-art-${chunk.article_number}`;
+  return chunk.id; // recitals: one chunk per recital, id is already the key
 }
 
 /**

@@ -7,6 +7,7 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  asksBothRegulations,
   buildWhereClause,
   parseExplicitReferences,
   rowToChunk,
@@ -68,6 +69,20 @@ describe("parseExplicitReferences (exact-reference lookups)", () => {
 
   it("returns nothing for topical questions", () => {
     expect(parseExplicitReferences("What are the lawful bases for processing?")).toEqual([]);
+  });
+});
+
+describe("asksBothRegulations (US5 balanced retrieval trigger)", () => {
+  it("detects questions naming both regulations", () => {
+    expect(asksBothRegulations("What do the GDPR and the AI Act require?")).toBe(true);
+    expect(asksBothRegulations("what do both regulations require?")).toBe(true);
+    expect(asksBothRegulations("transparency duties under both regimes")).toBe(true);
+    expect(asksBothRegulations("what do the two regulations require regarding the data?")).toBe(true);
+  });
+
+  it("stays off for single-regulation or topical questions", () => {
+    expect(asksBothRegulations("What are the lawful bases under the GDPR?")).toBe(false);
+    expect(asksBothRegulations("Which AI uses are high-risk?")).toBe(false);
   });
 });
 

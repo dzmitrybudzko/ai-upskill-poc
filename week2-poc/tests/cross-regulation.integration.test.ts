@@ -38,4 +38,15 @@ describe("US5 — cross-regulation synthesis path", () => {
   it("the synthesis prompt instructs multi-source synthesis across regulations", () => {
     expect(buildSystemPrompt()).toContain("CROSS-REGULATION");
   });
+
+  it("a 'both regulations' question gets balanced retrieval even at small k", async () => {
+    // Without balancing, the fake embedder's ranking routinely fills k=4 from
+    // one regulation; the trigger phrase must force a split across both.
+    const res = await answer(
+      { question: "What do both regulations require about personal data?", k: 4 },
+      { retriever: ctx.retriever, llm: new EchoCitingLLMProvider(), embedder: ctx.embedder },
+    );
+    const regs = new Set(res.retrieved.map((r) => r.chunk.regulation));
+    expect(regs).toEqual(new Set(["GDPR", "AI_ACT"]));
+  });
 });

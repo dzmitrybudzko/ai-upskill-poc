@@ -8,17 +8,11 @@
  * article/annex number agree — robust to paragraph-level chunk splitting.
  */
 
-import type { Chunk } from "../corpus/corpus.js";
+import { sourceKey } from "../corpus/corpus.js";
 import type { Answer } from "../rag/answer.js";
 import type { RetrievedChunk } from "../retrieval/retriever.js";
 
-/** Article/annex-level key for a chunk, the golden set's expected_sources unit. */
-export function sourceKey(chunk: Chunk): string {
-  const prefix = chunk.regulation === "GDPR" ? "gdpr" : "aiact";
-  if (chunk.type === "annex") return `${prefix}-anx-${chunk.annex_number}`;
-  if (chunk.type === "article") return `${prefix}-art-${chunk.article_number}`;
-  return chunk.id; // recitals: one chunk per recital, id is already the key
-}
+export { sourceKey };
 
 /** SC-002: any expected source present in the top-k retrieved set. */
 export function hitAtK(expectedSources: string[], retrieved: RetrievedChunk[]): boolean {

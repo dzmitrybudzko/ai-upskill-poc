@@ -16,7 +16,7 @@
 ## Requirement Clarity
 
 - [x] CHK006 - Is "substantive claim" defined so it is unambiguous which sentences require a citation versus connective/framing prose? RESOLVED 2026-07-13: FR-002 now defines "substantive claim". [Ambiguity, Spec §FR-001/§FR-002]
-- [ ] CHK007 - Is the required citation granularity specified (article-level vs. paragraph/point-level, e.g. must it reach "Art. 6(1)(f)" or is "Art. 6" sufficient)? [Clarity, Spec §FR-002]
+- [x] CHK007 - Is the required citation granularity specified (article-level vs. paragraph/point-level, e.g. must it reach "Art. 6(1)(f)" or is "Art. 6" sufficient)? RESOLVED 2026-07-14 (T036): granularity = ingestion chunk granularity — paragraph-level where long articles were split ("GDPR Art. 6(1)"), article-level otherwise; eval source-matching stays article/annex-level. Documented in src/corpus/corpus.ts. [Clarity, Spec §FR-002]
 - [x] CHK008 - Is "retrieval too weak to support an answer" quantified or given an objective criterion at the requirements level, rather than left to implementation? RESOLVED 2026-07-14: FR-004 now defines "too weak" — empty retrieval, or top-ranked score below a configured refusal threshold calibrated on the golden refusal group — plus synthesis-time insufficiency. [Ambiguity, Spec §FR-004]
 - [x] CHK009 - Are the criteria that classify a question as "advice-framed" specified, so the decline-to-recommend rule can be applied consistently? RESOLVED 2026-07-13: FR-005 now defines "advice-framed". [Ambiguity, Spec §FR-005]
 - [x] CHK010 - Is the required content of a refusal message specified (must name the covered corpus: GDPR + EU AI Act, English)? RESOLVED 2026-07-14: FR-004 now requires refusals to state coverage as "the English text of the GDPR and the EU AI Act". [Clarity, Spec §FR-004]
@@ -31,7 +31,7 @@
 
 ## Acceptance Criteria Quality (Measurability)
 
-- [ ] CHK016 - Are the judged dimensions (groundedness, citation correctness, relevance, refusal accuracy) each defined with an objective rubric so scoring is repeatable, not left to judge discretion? [Measurability, Spec §FR-009/§SC-003/§SC-004]
+- [x] CHK016 - Are the judged dimensions (groundedness, citation correctness, relevance, refusal accuracy) each defined with an objective rubric so scoring is repeatable, not left to judge discretion? RESOLVED 2026-07-14 (T022): count/enumeration-based rubric in src/eval/judge.ts — scores derived in code from enumerated findings, flagged claims re-verified in a second pass; refusal accuracy is deterministic (behavior match). [Measurability, Spec §FR-009/§SC-003/§SC-004]
 - [ ] CHK017 - Is "citation correctness" distinguished from mere source presence — does it require the cited article to actually support the claim (precision), not just appear in retrieval? [Clarity, Spec §SC-004]
 - [ ] CHK018 - Is the "zero fabricated citations" criterion defined precisely (a citation to any id not in the retrieved set, or to a non-existent article/annex)? [Measurability, Spec §SC-005]
 

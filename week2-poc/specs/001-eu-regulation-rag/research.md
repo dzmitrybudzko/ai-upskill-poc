@@ -32,6 +32,7 @@ All Technical Context unknowns resolved. Each decision: what, why, alternatives.
 - **Decision**: Refuse when (a) top-1 similarity is below a configurable floor (`REFUSAL_MIN_SCORE`), or (b) the model, per its instructions, judges the retrieved passages insufficient, or (c) the request is advice-framed (state text, decline to recommend — counts as refusal). Refusals state the assistant's coverage (GDPR + EU AI Act text, English).
 - **Rationale**: Combines a cheap deterministic guard (similarity floor) with model judgment; tuned against the refusal group of the golden set. Serves Principle III and SC-001.
 - **Alternatives considered**: Pure threshold (brittle) or pure model judgment (misses obvious out-of-corpus) — the combination is more robust. Floor default set provisionally and calibrated during eval.
+- **Calibration (T037, 2026-07-14, text-embedding-3-small-1)**: top-1 cosine on the golden set — answer-expected questions ≥ 0.623, refusal group 0.196–0.535, advice-framed questions ≈ 0.455–0.480. The bands overlap, so a floor that catches every refusal deterministically (≥ 0.54) would also threshold-refuse advice-framed questions before synthesis, breaking FR-005's "state the text, decline to recommend". **Chosen: `REFUSAL_MIN_SCORE = 0.4`** — deterministic refusal for clearly-off-topic questions, model judgment for the near-topic band (measured 100% refusal accuracy on the golden set). Recorded in `.env.example` and as the config default.
 
 ## 6. Evaluation harness
 

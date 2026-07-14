@@ -148,11 +148,11 @@ description: "Task list for feature 001 — Grounded RAG Assistant over GDPR & t
 
 ## Phase 11: Polish & Cross-Cutting Concerns
 
-- [ ] T036 Decide and document citation granularity (article-level vs. paragraph/point-level) and apply consistently in `citationLabel` + judge (resolves CHK007) in `src/corpus/corpus.ts`
-- [ ] T037 Calibrate `REFUSAL_MIN_SCORE` against the refusal group of the golden set; record chosen value in `.env.example` + research.md
-- [ ] T038 [P] Write `week2-poc/README.md` — clean-machine reproduction (install → parse-corpus → index → ask/eval), no Docker (SC-007)
-- [ ] T039 Run `rag eval` and confirm all Success Criteria thresholds pass (SC-001…SC-006); record results
-- [ ] T040 [P] Quickstart pass: execute each command in quickstart.md and confirm expected outcomes
+- [X] T036 Decide and document citation granularity (article-level vs. paragraph/point-level) and apply consistently in `citationLabel` + judge (resolves CHK007) in `src/corpus/corpus.ts`
+- [X] T037 Calibrate `REFUSAL_MIN_SCORE` against the refusal group of the golden set; record chosen value in `.env.example` + research.md
+- [X] T038 [P] Write `week2-poc/README.md` — clean-machine reproduction (install → parse-corpus → index → ask/eval), no Docker (SC-007)
+- [X] T039 Run `rag eval` and confirm all Success Criteria thresholds pass (SC-001…SC-006); record results
+- [X] T040 [P] Quickstart pass: execute each command in quickstart.md and confirm expected outcomes
 
 ---
 
