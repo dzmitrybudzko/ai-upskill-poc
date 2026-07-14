@@ -71,14 +71,29 @@ class DialEmbeddingProvider implements EmbeddingProvider {
   }
 }
 
+/**
+ * Dial routes requests Azure-style — per-deployment paths with an api-version
+ * query and an Api-Key header — so each provider gets a client whose baseURL
+ * targets its own deployment.
+ */
+const DIAL_API_VERSION = "2025-04-01-preview";
+
+function dialClient(cfg: Config, deployment: string): OpenAI {
+  return new OpenAI({
+    baseURL: `${cfg.dialBaseUrl.replace(/\/$/, "")}/openai/deployments/${deployment}`,
+    apiKey: cfg.dialApiKey,
+    defaultQuery: { "api-version": DIAL_API_VERSION },
+    defaultHeaders: { "Api-Key": cfg.dialApiKey },
+  });
+}
+
 /** Construct both providers from config only — no other inputs (contract rule). */
 export function createDialProviders(cfg: Config): {
   llm: LLMProvider;
   embedder: EmbeddingProvider;
 } {
-  const client = new OpenAI({ baseURL: cfg.dialBaseUrl, apiKey: cfg.dialApiKey });
   return {
-    llm: new DialLLMProvider(client, cfg.chatModel),
-    embedder: new DialEmbeddingProvider(client, cfg.embeddingModel),
+    llm: new DialLLMProvider(dialClient(cfg, cfg.chatModel), cfg.chatModel),
+    embedder: new DialEmbeddingProvider(dialClient(cfg, cfg.embeddingModel), cfg.embeddingModel),
   };
 }
