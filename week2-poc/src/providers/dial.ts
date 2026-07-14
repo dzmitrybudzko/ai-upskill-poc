@@ -1,0 +1,84 @@
+/**
+ * providers/dial.ts
+ * -----------------------------------------------------------------------------
+ * EPAM Dial implementation of the provider interfaces (Principle V).
+ *
+ * Dial exposes an OpenAI-compatible endpoint, so a single `openai` SDK client
+ * (pointed at DIAL_BASE_URL) backs both chat completion and embeddings. This is
+ * the ONLY module allowed to import the vendor SDK (contracts/providers.md).
+ */
+
+import OpenAI from "openai";
+import type { Config } from "../config.js";
+import { type EmbeddingProvider, type LLMProvider, ProviderError } from "./types.js";
+
+class DialLLMProvider implements LLMProvider {
+  constructor(
+    private readonly client: OpenAI,
+    readonly model: string,
+  ) {}
+
+  async complete(input: {
+    system: string;
+    user: string;
+    temperature?: number;
+    responseFormat?: "text" | "json";
+  }): Promise<string> {
+    try {
+      const res = await this.client.chat.completions.create({
+        model: this.model,
+        temperature: input.temperature ?? 0,
+        ...(input.responseFormat === "json"
+          ? { response_format: { type: "json_object" as const } }
+          : {}),
+        messages: [
+          { role: "system", content: input.system },
+          { role: "user", content: input.user },
+        ],
+      });
+      const content = res.choices[0]?.message?.content;
+      if (!content) {
+        throw new ProviderError(`Dial chat completion returned no content (model ${this.model})`);
+      }
+      return content;
+    } catch (err) {
+      if (err instanceof ProviderError) throw err;
+      throw new ProviderError(`Dial chat completion failed (model ${this.model})`, err);
+    }
+  }
+}
+
+class DialEmbeddingProvider implements EmbeddingProvider {
+  constructor(
+    private readonly client: OpenAI,
+    readonly model: string,
+  ) {}
+
+  async embed(texts: string[]): Promise<number[][]> {
+    try {
+      const res = await this.client.embeddings.create({ model: this.model, input: texts });
+      if (res.data.length !== texts.length) {
+        throw new ProviderError(
+          `Dial embeddings returned ${res.data.length} vectors for ${texts.length} inputs (model ${this.model})`,
+        );
+      }
+      // The API documents `index` for ordering; sort defensively.
+      return [...res.data].sort((a, b) => a.index - b.index).map((d) => d.embedding);
+    } catch (err) {
+      if (err instanceof ProviderError) throw err;
+      throw new ProviderError(`Dial embeddings failed (model ${this.model})`, err);
+    }
+  }
+}
+
+/** Construct both providers from config only — no other inputs (contract rule). */
+export function createDialProviders(cfg: Config): {
+  llm: LLMProvider;
+  embedder: EmbeddingProvider;
+} {
+  const client = new OpenAI({ baseURL: cfg.dialBaseUrl, apiKey: cfg.dialApiKey });
+  return {
+    llm: new DialLLMProvider(client, cfg.chatModel),
+    embedder: new DialEmbeddingProvider(client, cfg.embeddingModel),
+  };
+}

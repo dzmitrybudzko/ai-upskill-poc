@@ -5,12 +5,25 @@
   "type": "module",
   "description": "Grounded RAG chatbot over GDPR and the EU AI Act (PoC). Ingestion tooling only at this stage.",
   "scripts": {
-    "parse-corpus": "tsx scripts/parse-corpus.ts"
+    "parse-corpus": "tsx scripts/parse-corpus.ts",
+    "index": "tsx src/cli/main.ts index",
+    "ask": "tsx src/cli/main.ts ask",
+    "baseline": "tsx src/cli/main.ts baseline",
+    "eval": "tsx src/cli/main.ts eval",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
     "cheerio": "^1.0.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "@lancedb/lancedb": "^0.31.0",
+    "commander": "^15.0.0",
+    "dotenv": "^17.4.2",
+    "openai": "^6.46.0",
+    "zod": "^4.4.3"
   }
 }

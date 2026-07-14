@@ -21,10 +21,10 @@ description: "Task list for feature 001 — Grounded RAG Assistant over GDPR & t
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [ ] T001 Add runtime dependencies (`@lancedb/lancedb`, `openai`, `zod`, `commander`) and dev deps (`vitest`) to `package.json`; run `npm install`
-- [ ] T002 [P] Add npm scripts (`index`, `ask`, `baseline`, `eval`, `test`) to `package.json`
-- [ ] T003 [P] Create `.env.example` documenting `DIAL_BASE_URL`, `DIAL_API_KEY`, `DIAL_CHAT_MODEL`, `DIAL_EMBEDDING_MODEL`, optional `RAG_K`, `REFUSAL_MIN_SCORE` (no secrets)
-- [ ] T004 [P] Create `src/config.ts` — zod-validated env config loader (fails fast on missing `DIAL_*`; defaults `RAG_K=5`)
+- [X] T001 Add runtime dependencies (`@lancedb/lancedb`, `openai`, `zod`, `commander`) and dev deps (`vitest`) to `package.json`; run `npm install`
+- [X] T002 [P] Add npm scripts (`index`, `ask`, `baseline`, `eval`, `test`) to `package.json`
+- [X] T003 [P] Create `.env.example` documenting `DIAL_BASE_URL`, `DIAL_API_KEY`, `DIAL_CHAT_MODEL`, `DIAL_EMBEDDING_MODEL`, optional `RAG_K`, `REFUSAL_MIN_SCORE` (no secrets)
+- [X] T004 [P] Create `src/config.ts` — zod-validated env config loader (fails fast on missing `DIAL_*`; defaults `RAG_K=5`)
 
 ---
 
@@ -32,13 +32,13 @@ description: "Task list for feature 001 — Grounded RAG Assistant over GDPR & t
 
 **Purpose**: Core infrastructure required before any answering/eval story. Blocks Phases 3+.
 
-- [ ] T005 Define provider interfaces `LLMProvider` and `EmbeddingProvider` in `src/providers/types.ts` (per contracts/providers.md)
-- [ ] T006 Implement `DialProvider` (chat + embeddings via `openai` SDK pointed at Dial) in `src/providers/dial.ts`, constructed from config only
-- [ ] T007 [P] Create corpus loader, `Chunk` type, and `citationLabel(chunk)` helper (metadata → "GDPR Art. 6(1)(f)" / "AI Act Annex III") in `src/corpus/corpus.ts`
-- [ ] T008 [P] Contract test: a fake in-memory provider satisfies the interfaces and core modules import only interfaces (no vendor SDK) in `tests/providers.contract.test.ts`
-- [ ] T009 Implement index build (embed each chunk's metadata-headed text → LanceDB dataset at `data/index/`) in `src/retrieval/build-index.ts` (per contracts/retrieval.md)
-- [ ] T010 Implement `retrieve()` — top-k cosine + metadata filters (default articles+annexes, recitals opt-in, optional regulation) in `src/retrieval/retriever.ts`
-- [ ] T011 [P] Unit test retriever filter logic (default scope excludes recitals; `--reg` restricts) in `tests/retriever.test.ts`
+- [X] T005 Define provider interfaces `LLMProvider` and `EmbeddingProvider` in `src/providers/types.ts` (per contracts/providers.md)
+- [X] T006 Implement `DialProvider` (chat + embeddings via `openai` SDK pointed at Dial) in `src/providers/dial.ts`, constructed from config only
+- [X] T007 [P] Create corpus loader, `Chunk` type, and `citationLabel(chunk)` helper (metadata → "GDPR Art. 6(1)(f)" / "AI Act Annex III") in `src/corpus/corpus.ts`
+- [X] T008 [P] Contract test: a fake in-memory provider satisfies the interfaces and core modules import only interfaces (no vendor SDK) in `tests/providers.contract.test.ts`
+- [X] T009 Implement index build (embed each chunk's metadata-headed text → LanceDB dataset at `data/index/`) in `src/retrieval/build-index.ts` (per contracts/retrieval.md)
+- [X] T010 Implement `retrieve()` — top-k cosine + metadata filters (default articles+annexes, recitals opt-in, optional regulation) in `src/retrieval/retriever.ts`
+- [X] T011 [P] Unit test retriever filter logic (default scope excludes recitals; `--reg` restricts) in `tests/retriever.test.ts`
 
 **Checkpoint**: index builds from `data/corpus.json`; `retrieve()` returns ranked, filtered chunks.
 
@@ -50,12 +50,12 @@ description: "Task list for feature 001 — Grounded RAG Assistant over GDPR & t
 
 **Independent test**: `rag ask "What are the lawful bases for processing personal data?"` cites GDPR Art. 6 with a link; every claim is cited; no citation to a non-retrieved id.
 
-- [ ] T012 [US1] Define `not_legal_advice_notice` constant wording and coverage statement in `src/rag/notice.ts` (resolves CHK003)
-- [ ] T013 [US1] Build synthesis prompt (system encodes Principles I–IV; user lists retrieved chunks as `[id] <label> — <text> (url)`) in `src/rag/prompt.ts`
-- [ ] T014 [US1] Implement `answer()` — retrieve → synthesize → parse cited ids in `src/rag/answer.ts` (per contracts/answer.md)
-- [ ] T015 [US1] Implement citation validator: reject any cited id not in the retrieved set; render valid ids → `Citation{label,url}`; zero valid citations ⇒ convert to refusal in `src/rag/answer.ts`
-- [ ] T016 [P] [US1] Unit test citation validator: fabricated/non-retrieved id is dropped and a zero-citation answer becomes a refusal in `tests/citation-validator.test.ts`
-- [ ] T017 [US1] Implement `rag ask "<question>"` CLI command (renders answer + citations + notice) in `src/cli/main.ts`
+- [X] T012 [US1] Define `not_legal_advice_notice` constant wording and coverage statement in `src/rag/notice.ts` (resolves CHK003)
+- [X] T013 [US1] Build synthesis prompt (system encodes Principles I–IV; user lists retrieved chunks as `[id] <label> — <text> (url)`) in `src/rag/prompt.ts`
+- [X] T014 [US1] Implement `answer()` — retrieve → synthesize → parse cited ids in `src/rag/answer.ts` (per contracts/answer.md)
+- [X] T015 [US1] Implement citation validator: reject any cited id not in the retrieved set; render valid ids → `Citation{label,url}`; zero valid citations ⇒ convert to refusal in `src/rag/answer.ts`
+- [X] T016 [P] [US1] Unit test citation validator: fabricated/non-retrieved id is dropped and a zero-citation answer becomes a refusal in `tests/citation-validator.test.ts`
+- [X] T017 [US1] Implement `rag ask "<question>"` CLI command (renders answer + citations + notice) in `src/cli/main.ts`
 
 **Checkpoint**: MVP — grounded, cited answers with the no-fabrication guarantee.
 
