@@ -94,7 +94,8 @@ export function renderInlineCitations(
   const labelById = new Map(citations.map((c) => [c.chunk_id, c.label]));
   const rejectedIds = new Set(rejected);
   const out = text.replace(/\[([^\[\]]+)\]/g, (match, inner: string) => {
-    const tokens = inner.split(",").map((t) => t.trim());
+    // Models separate grouped ids with commas or semicolons.
+    const tokens = inner.split(/[,;]/).map((t) => t.trim());
     if (!tokens.some((t) => labelById.has(t) || rejectedIds.has(t))) return match;
     const labels = tokens
       .filter((t) => !rejectedIds.has(t))

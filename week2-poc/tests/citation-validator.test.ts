@@ -74,6 +74,17 @@ describe("renderInlineCitations", () => {
     expect(text).not.toContain("gdpr-art-99");
     expect(text).toContain("[note 1]"); // non-citation brackets untouched
   });
+
+  it("handles semicolon-separated id groups", () => {
+    const { citations, rejected } = validateCitations(["gdpr-art-6-1", "gdpr-art-7"], retrieved);
+    const text = renderInlineCitations(
+      "Both bases are defined [gdpr-art-6-1; gdpr-art-7].",
+      citations,
+      rejected,
+    );
+    expect(text).toContain("[GDPR Art. 6; GDPR Art. 7]");
+    expect(text).not.toContain("gdpr-art-6-1");
+  });
 });
 
 describe("answer() grounding invariant", () => {
