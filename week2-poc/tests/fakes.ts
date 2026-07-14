@@ -21,6 +21,24 @@ export class FakeEmbeddingProvider implements EmbeddingProvider {
   }
 }
 
+/**
+ * Synthesizes a fake grounded answer citing EVERY passage listed in the user
+ * prompt (ids parsed from the "[id] label — text" lines). Lets integration
+ * tests exercise the retrieve → answer → citation pipeline deterministically.
+ */
+export class EchoCitingLLMProvider implements LLMProvider {
+  readonly model = "fake-echo-llm";
+
+  async complete(input: { system: string; user: string }): Promise<string> {
+    const ids = [...input.user.matchAll(/^\[([^\]\s]+)\]/gm)].map((m) => m[1]);
+    return JSON.stringify({
+      mode: "answer",
+      answer: `Everything the passages say ${ids.map((id) => `[${id}]`).join(" ")}.`,
+      cited_ids: ids,
+    });
+  }
+}
+
 /** Replays canned responses in order (or a fixed one). */
 export class FakeLLMProvider implements LLMProvider {
   readonly model = "fake-llm";

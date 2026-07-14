@@ -15,6 +15,7 @@ import { loadCorpus } from "../corpus/corpus.js";
 import { buildIndex, INDEX_PATH } from "../retrieval/build-index.js";
 import { retrieve } from "../retrieval/retriever.js";
 import { answer } from "../rag/answer.js";
+import { baseline } from "../rag/baseline.js";
 import { formatReport, runEval } from "../eval/run-eval.js";
 
 /** Missing/invalid DIAL_* env → fail fast, never a silent fallback (cli.md). */
@@ -50,11 +51,28 @@ program
   .command("ask")
   .description("Answer one question (single-turn), grounded and cited — or refuse")
   .argument("<question>", "natural-language question about the GDPR or the EU AI Act")
-  .action(async (question: string) => {
+  .option("--reg <regulation>", "restrict retrieval to one regulation (GDPR | AI_ACT)")
+  .option("--recitals", "include recitals in retrieval (off by default, FR-007)")
+  .option("--no-annexes", "exclude annexes from retrieval")
+  .option("-k <n>", "retrieval depth", (v) => parseInt(v, 10))
+  .action(async (question: string, opts: { reg?: string; recitals?: boolean; annexes: boolean; k?: number }) => {
     const cfg = requireConfig();
+    if (opts.reg !== undefined && opts.reg !== "GDPR" && opts.reg !== "AI_ACT") {
+      console.error(`--reg must be GDPR or AI_ACT (got "${opts.reg}")`);
+      process.exit(1);
+    }
     const { llm, embedder } = createDialProviders(cfg);
     const res = await answer(
-      { question, k: cfg.k, refusalMinScore: cfg.refusalMinScore },
+      {
+        question,
+        k: opts.k ?? cfg.k,
+        refusalMinScore: cfg.refusalMinScore,
+        filters: {
+          regulation: opts.reg as "GDPR" | "AI_ACT" | undefined,
+          includeRecitals: opts.recitals === true,
+          includeAnnexes: opts.annexes,
+        },
+      },
       { retriever: retrieve, llm, embedder },
     );
 
@@ -69,6 +87,35 @@ program
       }
     }
     console.log(`\n${res.not_legal_advice_notice}`);
+  });
+
+program
+  .command("baseline")
+  .description("Answer the same question with and without retrieval, side by side (US6)")
+  .argument("<question>", "natural-language question about the GDPR or the EU AI Act")
+  .action(async (question: string) => {
+    const cfg = requireConfig();
+    const { llm, embedder } = createDialProviders(cfg);
+    const [rag, noRag] = await Promise.all([
+      answer(
+        { question, k: cfg.k, refusalMinScore: cfg.refusalMinScore },
+        { retriever: retrieve, llm, embedder },
+      ),
+      baseline(question, llm),
+    ]);
+
+    console.log("=== WITH RETRIEVAL (grounded, citations validated) ===\n");
+    if (rag.mode === "refused") {
+      console.log("REFUSED");
+      console.log(rag.text);
+    } else {
+      console.log(rag.text);
+      console.log("\nSources:");
+      for (const c of rag.citations) console.log(`  - ${c.label} — ${c.url}`);
+    }
+    console.log("\n=== WITHOUT RETRIEVAL (model memory, references NOT verified) ===\n");
+    console.log(noRag.text);
+    console.log(`\n${rag.not_legal_advice_notice}`);
   });
 
 program

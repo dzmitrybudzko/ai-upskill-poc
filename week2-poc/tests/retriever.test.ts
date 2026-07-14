@@ -6,7 +6,11 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { buildWhereClause, rowToChunk } from "../src/retrieval/retriever.js";
+import {
+  buildWhereClause,
+  parseExplicitReferences,
+  rowToChunk,
+} from "../src/retrieval/retriever.js";
 
 describe("buildWhereClause (FR-007)", () => {
   it("default scope is articles + annexes, recitals excluded", () => {
@@ -31,6 +35,39 @@ describe("buildWhereClause (FR-007)", () => {
   it("--reg restricts to a single regulation", () => {
     expect(buildWhereClause({ regulation: "AI_ACT" })).toContain("regulation = 'AI_ACT'");
     expect(buildWhereClause({ regulation: "GDPR" })).toContain("regulation = 'GDPR'");
+  });
+});
+
+describe("parseExplicitReferences (exact-reference lookups)", () => {
+  it("parses 'GDPR Article 22'", () => {
+    expect(parseExplicitReferences("What does GDPR Article 22 say?")).toEqual([
+      { regulation: "GDPR", article: "22" },
+    ]);
+  });
+
+  it("parses 'Art. 10 of the AI Act'", () => {
+    expect(parseExplicitReferences("Summarize Art. 10 of the AI Act")).toEqual([
+      { regulation: "AI_ACT", article: "10" },
+    ]);
+  });
+
+  it("parses annexes with roman numerals", () => {
+    expect(parseExplicitReferences("Which uses are listed in AI Act Annex III?")).toEqual([
+      { regulation: "AI_ACT", annex: "III" },
+    ]);
+  });
+
+  it("leaves regulation open when both or neither are named", () => {
+    expect(parseExplicitReferences("Compare Article 6 in the GDPR and the AI Act")).toEqual([
+      { regulation: undefined, article: "6" },
+    ]);
+    expect(parseExplicitReferences("What does Article 22 say?")).toEqual([
+      { regulation: undefined, article: "22" },
+    ]);
+  });
+
+  it("returns nothing for topical questions", () => {
+    expect(parseExplicitReferences("What are the lawful bases for processing?")).toEqual([]);
   });
 });
 

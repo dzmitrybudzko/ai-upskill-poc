@@ -97,8 +97,8 @@ description: "Task list for feature 001 — Grounded RAG Assistant over GDPR & t
 
 **Independent test**: `rag ask "..." --reg AI_ACT` cites only AI Act sources; `--recitals` includes recitals.
 
-- [ ] T026 [US4] Wire CLI flags `--reg`, `--recitals`, `--no-annexes`, `-k` to `RetrievalFilters`/`k` in `src/cli/main.ts`
-- [ ] T027 [P] [US4] Integration test: filtered `ask` returns citations only from the selected regulation/type in `tests/filters.integration.test.ts`
+- [X] T026 [US4] Wire CLI flags `--reg`, `--recitals`, `--no-annexes`, `-k` to `RetrievalFilters`/`k` in `src/cli/main.ts`
+- [X] T027 [P] [US4] Integration test: filtered `ask` returns citations only from the selected regulation/type in `tests/filters.integration.test.ts`
 
 ---
 
@@ -108,8 +108,8 @@ description: "Task list for feature 001 — Grounded RAG Assistant over GDPR & t
 
 **Independent test**: the cross-regulation golden group yields answers citing both GDPR and AI Act sources.
 
-- [ ] T028 [US5] Ensure no-regulation-filter path retrieves from both regulations and the prompt instructs multi-source synthesis across regulations in `src/rag/prompt.ts` / `src/rag/answer.ts`
-- [ ] T029 [P] [US5] Integration test on the cross_regulation golden group (citations from both regulations) in `tests/cross-regulation.integration.test.ts`
+- [X] T028 [US5] Ensure no-regulation-filter path retrieves from both regulations and the prompt instructs multi-source synthesis across regulations in `src/rag/prompt.ts` / `src/rag/answer.ts`
+- [X] T029 [P] [US5] Integration test on the cross_regulation golden group (citations from both regulations) in `tests/cross-regulation.integration.test.ts`
 
 ---
 
@@ -119,9 +119,9 @@ description: "Task list for feature 001 — Grounded RAG Assistant over GDPR & t
 
 **Independent test**: `rag baseline "What does GDPR Article 22 say?"` shows both; no-RAG may cite wrong/invented article numbers, RAG cites verifiably.
 
-- [ ] T030 [US6] Implement `baseline()` (same model, no retrieved context) in `src/rag/baseline.ts` (per contracts/answer.md)
-- [ ] T031 [US6] Implement `rag baseline "<question>"` CLI command with side-by-side rendering + notice in `src/cli/main.ts`
-- [ ] T032 [P] [US6] Add a baseline-vs-RAG check to the eval report demonstrating SC-006 in `src/eval/run-eval.ts`
+- [X] T030 [US6] Implement `baseline()` (same model, no retrieved context) in `src/rag/baseline.ts` (per contracts/answer.md)
+- [X] T031 [US6] Implement `rag baseline "<question>"` CLI command with side-by-side rendering + notice in `src/cli/main.ts`
+- [X] T032 [P] [US6] Add a baseline-vs-RAG check to the eval report demonstrating SC-006 in `src/eval/run-eval.ts`
 
 ---
 

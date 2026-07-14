@@ -42,6 +42,36 @@ export function buildWhereClause(filters: RetrievalFilters = {}): string {
   return parts.join(" AND ");
 }
 
+export interface ExplicitReference {
+  regulation?: Regulation;
+  article?: string;
+  annex?: string;
+}
+
+/**
+ * Parse explicit article/annex references from a question, e.g. "What does
+ * GDPR Article 22 say?", "AI Act Annex III". Exact-reference lookups carry
+ * little topical signal, so pure vector search ranks neighbouring articles
+ * above the named one; these references are resolved by metadata instead and
+ * pinned ahead of the vector results. Exported pure for unit testing.
+ */
+export function parseExplicitReferences(question: string): ExplicitReference[] {
+  const mentionsGdpr = /\bgdpr\b/i.test(question);
+  const mentionsAiAct = /\bai[\s-]?act\b/i.test(question);
+  // Attribute references only when exactly one regulation is named.
+  const regulation: Regulation | undefined =
+    mentionsGdpr && !mentionsAiAct ? "GDPR" : mentionsAiAct && !mentionsGdpr ? "AI_ACT" : undefined;
+
+  const refs: ExplicitReference[] = [];
+  for (const m of question.matchAll(/\bart(?:icle|\.)?\s*(\d+[a-z]?)\b/gi)) {
+    refs.push({ regulation, article: m[1] });
+  }
+  for (const m of question.matchAll(/\bannex\s+([ivxlcdm]+|\d+)\b/gi)) {
+    refs.push({ regulation, annex: m[1].toUpperCase() });
+  }
+  return refs;
+}
+
 /** Map a LanceDB row back to a Chunk ("" placeholders → undefined). */
 export function rowToChunk(row: Record<string, unknown>): Chunk {
   const opt = (v: unknown) => (v === "" || v == null ? undefined : (v as string));
@@ -71,17 +101,38 @@ export async function retrieve(
 
   const db = await lancedb.connect(indexPath);
   const table = await db.openTable(TABLE_NAME);
-  const rows = (await table
+
+  // Explicitly referenced articles/annexes are resolved by metadata and pinned
+  // first (score 1 = exact reference). User filters still apply, so a pinned
+  // lookup can never smuggle in an excluded type/regulation.
+  const pinned: Record<string, unknown>[] = [];
+  for (const ref of parseExplicitReferences(question).slice(0, 3)) {
+    const clauses = [buildWhereClause(opts.filters)];
+    if (ref.article) clauses.push(`type = 'article' AND article_number = '${ref.article}'`);
+    if (ref.annex) clauses.push(`type = 'annex' AND annex_number = '${ref.annex}'`);
+    if (ref.regulation) clauses.push(`regulation = '${ref.regulation}'`);
+    const rows = (await table
+      .query()
+      .where(clauses.join(" AND "))
+      .limit(4)
+      .toArray()) as Record<string, unknown>[];
+    pinned.push(...rows);
+  }
+  const pinnedIds = new Set(pinned.map((r) => r.id as string));
+
+  const vectorRows = (await table
     .vectorSearch(vector)
     .distanceType("cosine")
     .where(buildWhereClause(opts.filters))
     .limit(k)
     .toArray()) as Record<string, unknown>[];
 
-  return rows.map((row, i) => ({
-    chunk: rowToChunk(row),
-    // LanceDB reports cosine DISTANCE; similarity = 1 - distance.
-    score: 1 - (row._distance as number),
-    rank: i + 1,
-  }));
+  const results: RetrievedChunk[] = [
+    ...pinned.map((row) => ({ chunk: rowToChunk(row), score: 1 })),
+    ...vectorRows
+      .filter((row) => !pinnedIds.has(row.id as string))
+      // LanceDB reports cosine DISTANCE; similarity = 1 - distance.
+      .map((row) => ({ chunk: rowToChunk(row), score: 1 - (row._distance as number) })),
+  ];
+  return results.slice(0, Math.max(k, pinned.length)).map((r, i) => ({ ...r, rank: i + 1 }));
 }

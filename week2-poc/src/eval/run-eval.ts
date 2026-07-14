@@ -11,8 +11,10 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { z } from "zod";
+import { citationLabel } from "../corpus/corpus.js";
 import type { EmbeddingProvider, LLMProvider } from "../providers/types.js";
 import { answer, type Retriever } from "../rag/answer.js";
+import { baseline } from "../rag/baseline.js";
 import {
   citesExpectedSource,
   fabricatedCitationCount,
@@ -62,6 +64,12 @@ export interface Criterion {
   pass: boolean | null;
 }
 
+export interface BaselineCheck {
+  question_id: string;
+  flagged: boolean; // baseline answer contains a wrong/unverifiable reference
+  example: string;
+}
+
 export interface EvalReport {
   timestamp: string;
   k: number;
@@ -69,6 +77,7 @@ export interface EvalReport {
   group?: string;
   cases: EvalCaseResult[];
   perGroup: Record<string, { count: number; behavior_accuracy: number; hit_rate: number | null; mrr: number | null }>;
+  baselineChecks: BaselineCheck[];
   criteria: Criterion[];
   passed: boolean;
 }
@@ -89,6 +98,60 @@ async function mapPool<T, R>(items: T[], limit: number, fn: (t: T) => Promise<R>
 
 const mean = (xs: number[]): number | null =>
   xs.length === 0 ? null : xs.reduce((a, b) => a + b, 0) / xs.length;
+
+const BaselineVerdict = z.object({
+  contains_wrong_or_unverifiable_reference: z.boolean(),
+  example: z.string().default(""),
+});
+
+const BASELINE_CHECK_SYSTEM = `You verify article references in an answer written from model memory (no source access) about the GDPR / EU AI Act. You receive the question, the memory-written answer, and regulation passages retrieved for this question (treat them as ground truth for where this topic actually lives).
+
+Report whether the answer names at least one article/annex reference that is WRONG (the topic is not in that article) or UNVERIFIABLE against the passages (a specific article/paragraph number that cannot be confirmed). Naming the same articles the passages show is correct, not a flag.
+
+Respond with a single JSON object, nothing else:
+{"contains_wrong_or_unverifiable_reference": true|false, "example": "the offending reference and why, or empty"}`;
+
+/**
+ * SC-006 (T032): demonstrate the RAG advantage — the no-retrieval mode produces
+ * at least one wrong/unverifiable reference on factual questions that the
+ * grounded mode (whose citations are validated; SC-005) does not.
+ */
+export async function runBaselineChecks(
+  questions: GoldenQuestion[],
+  k: number,
+  deps: { retriever: Retriever; llm: LLMProvider; embedder: EmbeddingProvider },
+  sample = 8,
+): Promise<BaselineCheck[]> {
+  // Sample where model memory is weakest first: the AI Act (2024, detail-heavy
+  // fine tiers/annex numbering) and cross-regulation questions demonstrate the
+  // RAG advantage far more reliably than well-known GDPR basics.
+  const groupPriority: Record<string, number> = { aiact_factual: 0, cross_regulation: 1 };
+  const factual = questions
+    .filter((q) => q.expected_behavior === "answer")
+    .sort((a, b) => (groupPriority[a.group] ?? 2) - (groupPriority[b.group] ?? 2))
+    .slice(0, sample);
+  return mapPool(factual, 2, async (q) => {
+    const [noRag, reference] = await Promise.all([
+      baseline(q.question, deps.llm),
+      deps.retriever(q.question, { k }, deps.embedder),
+    ]);
+    const passages = reference
+      .map((r) => `[${citationLabel(r.chunk)}] ${r.chunk.text}`)
+      .join("\n\n");
+    const raw = await deps.llm.complete({
+      system: BASELINE_CHECK_SYSTEM,
+      user: `Question: ${q.question}\n\nMemory-written answer:\n${noRag.text}\n\nGround-truth passages:\n\n${passages}`,
+      temperature: 0,
+      responseFormat: "json",
+    });
+    const verdict = BaselineVerdict.parse(JSON.parse(raw));
+    return {
+      question_id: q.id,
+      flagged: verdict.contains_wrong_or_unverifiable_reference,
+      example: verdict.example,
+    };
+  });
+}
 
 export async function runEval(
   opts: {
@@ -212,6 +275,18 @@ export async function runEval(
     ),
   ];
 
+  // SC-006: baseline comparison (skipped when the run has no factual questions).
+  const baselineChecks = await runBaselineChecks(questions, opts.k, deps);
+  criteria.push(
+    criterion(
+      "SC-006",
+      "Baseline shows a wrong/unverifiable reference RAG avoids",
+      baselineChecks.length === 0 ? null : baselineChecks.some((b) => b.flagged) ? 1 : 0,
+      1,
+      "==",
+    ),
+  );
+
   const report: EvalReport = {
     timestamp: new Date().toISOString(),
     k: opts.k,
@@ -219,6 +294,7 @@ export async function runEval(
     group: opts.group,
     cases,
     perGroup,
+    baselineChecks,
     criteria,
     passed: criteria.every((c) => c.pass !== false),
   };
@@ -250,6 +326,12 @@ export function formatReport(report: EvalReport): string {
     const threshold = c.op === "==" ? `== ${c.threshold}` : `>= ${(c.threshold * 100).toFixed(0)}%`;
     const status = c.pass === null ? "SKIP" : c.pass ? "PASS" : "FAIL";
     lines.push(`  ${status.padEnd(5)} ${c.id} ${c.name}: ${value} (${threshold})`);
+  }
+  const flagged = report.baselineChecks.filter((b) => b.flagged);
+  if (flagged.length > 0) {
+    lines.push("");
+    lines.push("Baseline hallucinations demonstrated (SC-006):");
+    for (const b of flagged) lines.push(`  ${b.question_id}: ${b.example.slice(0, 160)}`);
   }
   const failed = report.cases.filter((c) => c.error);
   if (failed.length > 0) {
