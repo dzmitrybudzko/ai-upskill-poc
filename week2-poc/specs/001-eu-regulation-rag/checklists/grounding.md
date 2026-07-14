@@ -9,7 +9,7 @@
 
 - [ ] CHK001 - Is the rule "a grounded answer with zero valid citations must become a refusal" stated at the requirements level, not only in the design/contracts? [Gap, Spec §FR-002/§FR-004]
 - [ ] CHK002 - Are requirements defined for how many sources an answer must cite when several articles support it (cite all relied-upon, not just one)? [Completeness, Spec §FR-002]
-- [ ] CHK003 - Is the exact content and mandatory placement of the "not legal advice" notice specified (wording, on every answer AND refusal, on each surface)? [Gap, Spec §FR-005/§FR-014]
+- [x] CHK003 - Is the exact content and mandatory placement of the "not legal advice" notice specified (wording, on every answer AND refusal, on each surface)? RESOLVED 2026-07-14: FR-014 now fixes the exact notice wording and requires it verbatim on every answer and refusal (incl. baseline output), on every surface. [Gap, Spec §FR-005/§FR-014]
 - [ ] CHK004 - Is a non-English question handled by a stated requirement, or only mentioned as an edge case without a corresponding FR? [Completeness, Spec §Edge Cases]
 - [ ] CHK005 - Are requirements defined for citing recitals when opted in (may be cited, flagged as interpretive vs. operative text)? [Gap, Spec §FR-007]
 
@@ -17,9 +17,9 @@
 
 - [x] CHK006 - Is "substantive claim" defined so it is unambiguous which sentences require a citation versus connective/framing prose? RESOLVED 2026-07-13: FR-002 now defines "substantive claim". [Ambiguity, Spec §FR-001/§FR-002]
 - [ ] CHK007 - Is the required citation granularity specified (article-level vs. paragraph/point-level, e.g. must it reach "Art. 6(1)(f)" or is "Art. 6" sufficient)? [Clarity, Spec §FR-002]
-- [ ] CHK008 - Is "retrieval too weak to support an answer" quantified or given an objective criterion at the requirements level, rather than left to implementation? [Ambiguity, Spec §FR-004]
+- [x] CHK008 - Is "retrieval too weak to support an answer" quantified or given an objective criterion at the requirements level, rather than left to implementation? RESOLVED 2026-07-14: FR-004 now defines "too weak" — empty retrieval, or top-ranked score below a configured refusal threshold calibrated on the golden refusal group — plus synthesis-time insufficiency. [Ambiguity, Spec §FR-004]
 - [x] CHK009 - Are the criteria that classify a question as "advice-framed" specified, so the decline-to-recommend rule can be applied consistently? RESOLVED 2026-07-13: FR-005 now defines "advice-framed". [Ambiguity, Spec §FR-005]
-- [ ] CHK010 - Is the required content of a refusal message specified (must name the covered corpus: GDPR + EU AI Act, English)? [Clarity, Spec §FR-004]
+- [x] CHK010 - Is the required content of a refusal message specified (must name the covered corpus: GDPR + EU AI Act, English)? RESOLVED 2026-07-14: FR-004 now requires refusals to state coverage as "the English text of the GDPR and the EU AI Act". [Clarity, Spec §FR-004]
 - [ ] CHK011 - Is "working link" defined measurably (what makes a citation link valid/verifiable)? [Measurability, Spec §FR-002]
 
 ## Requirement Consistency
