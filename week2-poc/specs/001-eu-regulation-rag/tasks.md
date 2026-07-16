@@ -131,8 +131,8 @@ description: "Task list for feature 001 — Grounded RAG Assistant over GDPR & t
 
 **Independent test**: eval report shows the metric delta attributable to the enhancement.
 
-- [ ] T033 [US7] Implement optional query rewrite and/or reranking behind a config flag in `src/retrieval/enhance.ts`
-- [ ] T034 [US7] Add before/after eval comparison mode reporting the metric delta in `src/eval/run-eval.ts`
+- [X] T033 [US7] Implement optional query rewrite and/or reranking behind a config flag in `src/retrieval/enhance.ts`
+- [X] T034 [US7] Add before/after eval comparison mode reporting the metric delta in `src/eval/run-eval.ts` (measured 2026-07-16: rewriting hurts hit-rate −12.9 pts overall → RAG_ENHANCE stays off, per "keep only what improves the numbers")
 
 ---
 
@@ -142,7 +142,7 @@ description: "Task list for feature 001 — Grounded RAG Assistant over GDPR & t
 
 **Independent test**: submitting a question in the UI renders answer/citations/refusal + notice.
 
-- [ ] T035 [US8] Implement a minimal local web form calling `answer()` and rendering answer/citations/refusal + notice in `src/web/`
+- [X] T035 [US8] Implement a minimal local web form calling `answer()` and rendering answer/citations/refusal + notice in `src/web/`
 
 ---
 

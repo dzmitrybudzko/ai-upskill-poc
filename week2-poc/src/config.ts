@@ -21,6 +21,13 @@ const EnvSchema = z.object({
   // catches clearly-off-topic questions; near-topic refusals and advice-framed
   // questions (top-1 ≈ 0.45–0.54) are left to synthesis-time model judgment.
   REFUSAL_MIN_SCORE: z.coerce.number().min(0).max(1).default(0.4),
+  // Optional retrieval enhancement (US7/FR-012): LLM query rewriting before
+  // embedding. Off by default; its metric effect is measured via `rag eval
+  // --compare` before adopting. (z.coerce.boolean would treat "false" as true.)
+  RAG_ENHANCE: z
+    .string()
+    .optional()
+    .transform((v) => v === "true" || v === "1"),
 });
 
 export type Config = {
@@ -30,6 +37,7 @@ export type Config = {
   embeddingModel: string;
   k: number;
   refusalMinScore: number;
+  enhance: boolean;
 };
 
 /** Load and validate configuration from the environment (.env supported). */
@@ -51,5 +59,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     embeddingModel: e.DIAL_EMBEDDING_MODEL,
     k: e.RAG_K,
     refusalMinScore: e.REFUSAL_MIN_SCORE,
+    enhance: e.RAG_ENHANCE,
   };
 }

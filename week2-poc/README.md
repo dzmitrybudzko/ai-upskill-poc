@@ -62,9 +62,15 @@ npm run ask -- "prohibited practices" --no-annexes -k 8
 # Same question with and without retrieval, side by side (US6)
 npm run baseline -- "What does GDPR Article 22 say?"
 
+# Minimal local web UI over the same answer() path (US8)
+npm run web                 # http://localhost:3000
+
 # The acceptance gate: golden set → per-group metrics + Success Criteria
 npm run eval                # exits non-zero on failure
 npm run eval -- --group refusal
+
+# Optional query rewriting (US7): measure its metric delta, adopt via RAG_ENHANCE=true
+npm run eval -- --compare
 
 # Unit & integration tests (offline: fake providers + temp LanceDB indexes)
 npm test
@@ -82,8 +88,18 @@ npm test
 | SC-006 Baseline hallucination demonstrated | yes | **yes** (memory cites the draft's "Art. 29" for deployer obligations; the enacted Act moved them to Art. 26) |
 
 Behavior match (answer vs. refuse) is 100% on all four golden groups. Known
-limits: query rewriting/reranking and the web UI (P3 stretch, T033–T035) are
-not built; SC-003 is judged by an LLM and moves a few points between runs.
+limit: SC-003 is judged by an LLM and moves a few points between runs.
+
+**Query rewriting (US7) was built, measured, and left OFF.** `npm run eval --
+--compare` (2026-07-16): rewriting the question before embedding *hurt*
+retrieval — hit-rate@5 dropped 27.3 points on `aiact_factual` and 12.5 on
+`cross_regulation` (SC-002 100% → 87.1%), with no meaningful gain elsewhere.
+The regulation texts match the user's original phrasing (plus the metadata
+header) better than LLM-expanded terminology, and rewriting dilutes the exact
+words that reference pinning and the both-regulations heuristic key on. Per the
+spec ("keep only what improves the numbers"), `RAG_ENHANCE` stays off by
+default; the flag and the `--compare` harness remain for future experiments
+(e.g. reranking instead of rewriting).
 
 ## Project structure
 
@@ -92,10 +108,11 @@ src/
 ├── config.ts             # zod-validated env config (fails fast on missing DIAL_*)
 ├── providers/            # Principle V: types.ts (interfaces) + dial.ts (only vendor code)
 ├── corpus/corpus.ts      # corpus loading, Chunk type, citation labels
-├── retrieval/            # build-index.ts (embed → LanceDB), retriever.ts (top-k + filters + reference pinning)
+├── retrieval/            # build-index.ts (embed → LanceDB), retriever.ts (top-k + filters + reference pinning), enhance.ts (optional query rewriting)
 ├── rag/                  # prompt.ts, answer.ts (synthesis + citation validator + refusal), baseline.ts, notice.ts
-├── eval/                 # metrics.ts (deterministic), judge.ts (enumeration rubric + verify pass), run-eval.ts (gate)
-└── cli/main.ts           # rag index | ask | baseline | eval
+├── eval/                 # metrics.ts (deterministic), judge.ts (enumeration rubric + verify pass), run-eval.ts (gate + --compare)
+├── web/server.ts         # minimal local UI (node:http, no extra deps)
+└── cli/main.ts           # rag index | ask | baseline | eval | web
 scripts/parse-corpus.ts   # structure-aware ingestion (articles/recitals/annexes + EUR-Lex links)
 data/corpus.json          # source of truth (committed); data/index/ is derived (gitignored)
 evals/golden-set.json     # 40 labelled questions: the acceptance gate (committed)

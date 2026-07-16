@@ -14,9 +14,16 @@ import { createDialProviders } from "../providers/dial.js";
 import { loadCorpus } from "../corpus/corpus.js";
 import { buildIndex, INDEX_PATH } from "../retrieval/build-index.js";
 import { retrieve } from "../retrieval/retriever.js";
-import { answer } from "../rag/answer.js";
+import { makeEnhancedRetriever } from "../retrieval/enhance.js";
+import { answer, type Retriever } from "../rag/answer.js";
 import { baseline } from "../rag/baseline.js";
-import { formatReport, runEval } from "../eval/run-eval.js";
+import { formatComparison, formatReport, runEval } from "../eval/run-eval.js";
+import type { LLMProvider } from "../providers/types.js";
+
+/** RAG_ENHANCE=true swaps in the query-rewriting retriever (US7, FR-012). */
+function pickRetriever(cfg: Config, llm: LLMProvider): Retriever {
+  return cfg.enhance ? makeEnhancedRetriever(llm) : retrieve;
+}
 
 /** Missing/invalid DIAL_* env → fail fast, never a silent fallback (cli.md). */
 function requireConfig(): Config {
@@ -73,7 +80,7 @@ program
           includeAnnexes: opts.annexes,
         },
       },
-      { retriever: retrieve, llm, embedder },
+      { retriever: pickRetriever(cfg, llm), llm, embedder },
     );
 
     if (res.mode === "refused") {
@@ -123,26 +130,55 @@ program
   .description("Run the golden set and gate on the Success Criteria (exits non-zero on failure)")
   .option("--group <name>", "run one group only (gdpr_factual | aiact_factual | cross_regulation | refusal)")
   .option("-k <n>", "retrieval depth", (v) => parseInt(v, 10))
-  .action(async (opts: { group?: string; k?: number }) => {
+  .option("--compare", "run twice — standard vs query-rewriting retrieval — and report the metric delta (US7)")
+  .action(async (opts: { group?: string; k?: number; compare?: boolean }) => {
     const cfg = requireConfig();
     const { llm, embedder } = createDialProviders(cfg);
     const k = opts.k ?? cfg.k;
-    let done = 0;
-    const report = await runEval(
-      {
-        k,
-        refusalMinScore: cfg.refusalMinScore,
-        group: opts.group,
-        onCase: (r) => {
-          done += 1;
-          const mark = r.error ? "✗ ERROR" : r.behavior_match ? "✓" : "✗";
-          console.log(`  ${String(done).padStart(2)}. ${r.question_id} [${r.group}] ${mark}`);
+
+    const run = (retriever: Retriever, label: string) => {
+      let done = 0;
+      console.log(`\n=== ${label} ===`);
+      return runEval(
+        {
+          k,
+          refusalMinScore: cfg.refusalMinScore,
+          group: opts.group,
+          onCase: (r) => {
+            done += 1;
+            const mark = r.error ? "✗ ERROR" : r.behavior_match ? "✓" : "✗";
+            console.log(`  ${String(done).padStart(2)}. ${r.question_id} [${r.group}] ${mark}`);
+          },
         },
-      },
-      { retriever: retrieve, llm, embedder },
-    );
+        { retriever, llm, embedder },
+      );
+    };
+
+    if (opts.compare) {
+      const before = await run(retrieve, "BEFORE: standard retrieval");
+      console.log(formatReport(before));
+      const after = await run(makeEnhancedRetriever(llm), "AFTER: query-rewriting retrieval");
+      console.log(formatReport(after));
+      console.log(formatComparison(before, after));
+      // The gate follows the shipping (standard) configuration.
+      process.exitCode = before.passed ? 0 : 1;
+      return;
+    }
+
+    const report = await run(pickRetriever(cfg, llm), cfg.enhance ? "eval (RAG_ENHANCE on)" : "eval");
     console.log(formatReport(report));
     process.exitCode = report.passed ? 0 : 1;
+  });
+
+program
+  .command("web")
+  .description("Serve the minimal local web UI over the same answer() path (US8)")
+  .option("--port <n>", "port to listen on", (v) => parseInt(v, 10), 3000)
+  .action(async (opts: { port: number }) => {
+    const cfg = requireConfig();
+    const { llm, embedder } = createDialProviders(cfg);
+    const { startWebServer } = await import("../web/server.js");
+    await startWebServer(cfg, { retriever: pickRetriever(cfg, llm), llm, embedder }, opts.port);
   });
 
 program.parseAsync().catch((err) => {

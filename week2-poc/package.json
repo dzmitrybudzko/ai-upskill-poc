@@ -10,6 +10,7 @@
     "ask": "tsx src/cli/main.ts ask",
     "baseline": "tsx src/cli/main.ts baseline",
     "eval": "tsx src/cli/main.ts eval",
+    "web": "tsx src/cli/main.ts web",
     "test": "vitest run"
   },
   "devDependencies": {

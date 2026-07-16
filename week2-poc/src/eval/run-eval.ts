@@ -307,6 +307,44 @@ export async function runEval(
   return report;
 }
 
+/**
+ * Before/after comparison for a retrieval enhancement (US7/FR-012, T034):
+ * the delta per group (hit-rate, MRR) and per Success Criterion.
+ */
+export function formatComparison(before: EvalReport, after: EvalReport): string {
+  const pct = (v: number | null) => (v === null ? "  n/a" : `${(v * 100).toFixed(1)}%`);
+  const delta = (b: number | null, a: number | null) =>
+    b === null || a === null ? "   —" : `${a - b >= 0 ? "+" : ""}${((a - b) * 100).toFixed(1)}`;
+
+  const lines: string[] = [];
+  lines.push("");
+  lines.push("=== Enhancement delta (before → after, Δ in points) ===");
+  lines.push("");
+  lines.push("Retrieval per group:");
+  for (const [group, b] of Object.entries(before.perGroup)) {
+    const a = after.perGroup[group];
+    if (!a || b.hit_rate === null) continue;
+    lines.push(
+      `  ${group.padEnd(18)} hit@${before.k} ${pct(b.hit_rate)} → ${pct(a.hit_rate)} (Δ ${delta(b.hit_rate, a.hit_rate)})  MRR ${b.mrr?.toFixed(2)} → ${a.mrr?.toFixed(2)}`,
+    );
+  }
+  lines.push("");
+  lines.push("Success Criteria:");
+  for (const b of before.criteria) {
+    const a = after.criteria.find((c) => c.id === b.id);
+    if (!a) continue;
+    const fmt = (c: Criterion) =>
+      c.value === null ? "n/a" : c.op === "==" ? String(c.value) : pct(c.value);
+    const d = b.op === "==" ? "" : ` (Δ ${delta(b.value, a.value)})`;
+    lines.push(`  ${b.id} ${b.name}: ${fmt(b)} → ${fmt(a)}${d}`);
+  }
+  lines.push("");
+  lines.push(
+    `Verdict: before ${before.passed ? "PASS" : "FAIL"}, after ${after.passed ? "PASS" : "FAIL"}.`,
+  );
+  return lines.join("\n");
+}
+
 export function formatReport(report: EvalReport): string {
   const lines: string[] = [];
   lines.push("");
