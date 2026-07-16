@@ -156,6 +156,13 @@ description: "Task list for feature 001 — Grounded RAG Assistant over GDPR & t
 
 ---
 
+## Phase 12: Convergence
+
+- [ ] T041 Refuse non-English questions and requests for non-English answers, stating coverage of the English texts only (add a language rule to the synthesis prompt in `src/rag/prompt.ts` and a refusal-path test; verified live 2026-07-16: a French question is currently answered fluently in French) per Edge Cases (non-English) / Out of Scope (contradicts)
+- [ ] T042 When a question asks about a GDPR annex, state that the GDPR has no annexes (only the AI Act does) instead of implying the annex merely wasn't retrieved (prompt note or deterministic branch on a GDPR-attributed annex reference in `src/rag/answer.ts`; verified live 2026-07-16) per Edge Cases (GDPR annex) (partial)
+
+---
+
 ## Dependencies & Story Completion Order
 
 - **Setup (P1-phase1)** → **Foundational (P2-phase2)** block everything.
