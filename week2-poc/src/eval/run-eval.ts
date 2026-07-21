@@ -119,9 +119,12 @@ Respond with a single JSON object, nothing else:
 export async function runBaselineChecks(
   questions: GoldenQuestion[],
   k: number,
-  deps: { retriever: Retriever; llm: LLMProvider; embedder: EmbeddingProvider },
+  deps: { retriever: Retriever; llm: LLMProvider; judgeLlm?: LLMProvider; embedder: EmbeddingProvider },
   sample = 8,
 ): Promise<BaselineCheck[]> {
+  // The baseline answer comes from the model under evaluation (deps.llm); the
+  // verdict on it comes from the judge so model comparisons share one referee.
+  const judge = deps.judgeLlm ?? deps.llm;
   // Sample where model memory is weakest first: the AI Act (2024, detail-heavy
   // fine tiers/annex numbering) and cross-regulation questions demonstrate the
   // RAG advantage far more reliably than well-known GDPR basics.
@@ -138,7 +141,7 @@ export async function runBaselineChecks(
     const passages = reference
       .map((r) => `[${citationLabel(r.chunk)}] ${r.chunk.text}`)
       .join("\n\n");
-    const raw = await deps.llm.complete({
+    const raw = await judge.complete({
       system: BASELINE_CHECK_SYSTEM,
       user: `Question: ${q.question}\n\nMemory-written answer:\n${noRag.text}\n\nGround-truth passages:\n\n${passages}`,
       temperature: 0,
@@ -161,8 +164,9 @@ export async function runEval(
     concurrency?: number;
     onCase?: (r: EvalCaseResult) => void;
   },
-  deps: { retriever: Retriever; llm: LLMProvider; embedder: EmbeddingProvider },
+  deps: { retriever: Retriever; llm: LLMProvider; judgeLlm?: LLMProvider; embedder: EmbeddingProvider },
 ): Promise<EvalReport> {
+  const judgeLlm = deps.judgeLlm ?? deps.llm;
   const questions = loadGoldenSet().filter((q) => !opts.group || q.group === opts.group);
   if (questions.length === 0) {
     throw new Error(`No golden questions match group "${opts.group}"`);
@@ -186,7 +190,7 @@ export async function runEval(
         cites_expected:
           produced === "answer" && hasExpected ? citesExpectedSource(res, q.expected_sources) : null,
         fabricated_citations: fabricatedCitationCount(res),
-        judge: produced === "answer" ? await judgeAnswer(q.question, res, deps.llm) : null,
+        judge: produced === "answer" ? await judgeAnswer(q.question, res, judgeLlm) : null,
       };
       opts.onCase?.(result);
       return result;

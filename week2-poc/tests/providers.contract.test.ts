@@ -12,6 +12,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { EmbeddingProvider, LLMProvider } from "../src/providers/types.js";
+import { stripJsonFence } from "../src/providers/dial.js";
 import { FakeEmbeddingProvider, FakeLLMProvider } from "./fakes.js";
 
 describe("provider interfaces (Principle V)", () => {
@@ -27,6 +28,25 @@ describe("provider interfaces (Principle V)", () => {
     const llm: LLMProvider = new FakeLLMProvider(["hello"]);
     await expect(llm.complete({ system: "s", user: "u" })).resolves.toBe("hello");
     expect(llm.model).toBeTruthy();
+  });
+});
+
+describe("stripJsonFence (Dial routes that ignore response_format)", () => {
+  it("unwraps a ```json fence", () => {
+    expect(stripJsonFence('```json\n{"ok": true}\n```')).toBe('{"ok": true}');
+  });
+
+  it("unwraps a bare ``` fence", () => {
+    expect(stripJsonFence('```\n{"ok": true}\n```')).toBe('{"ok": true}');
+  });
+
+  it("passes plain JSON through untouched", () => {
+    expect(stripJsonFence('{"ok": true}')).toBe('{"ok": true}');
+  });
+
+  it("leaves a fence inside a JSON string alone", () => {
+    const withInnerFence = '{"answer": "use ```json blocks```"}';
+    expect(stripJsonFence(withInnerFence)).toBe(withInnerFence);
   });
 });
 

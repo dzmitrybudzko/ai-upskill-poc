@@ -12,6 +12,16 @@ import OpenAI from "openai";
 import type { Config } from "../config.js";
 import { type EmbeddingProvider, type LLMProvider, ProviderError } from "./types.js";
 
+/**
+ * Some Dial routes (e.g. Vertex-hosted Claude) ignore `response_format` and
+ * return JSON wrapped in a markdown code fence. Callers JSON.parse the result,
+ * so unwrap the fence here — plain JSON passes through untouched.
+ */
+export function stripJsonFence(raw: string): string {
+  const m = raw.trim().match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
+  return m ? m[1] : raw;
+}
+
 class DialLLMProvider implements LLMProvider {
   constructor(
     private readonly client: OpenAI,
@@ -40,7 +50,7 @@ class DialLLMProvider implements LLMProvider {
       if (!content) {
         throw new ProviderError(`Dial chat completion returned no content (model ${this.model})`);
       }
-      return content;
+      return input.responseFormat === "json" ? stripJsonFence(content) : content;
     } catch (err) {
       if (err instanceof ProviderError) throw err;
       throw new ProviderError(`Dial chat completion failed (model ${this.model})`, err);
@@ -87,13 +97,19 @@ function dialClient(cfg: Config, deployment: string): OpenAI {
   });
 }
 
-/** Construct both providers from config only — no other inputs (contract rule). */
+/** Construct all providers from config only — no other inputs (contract rule). */
 export function createDialProviders(cfg: Config): {
   llm: LLMProvider;
+  judgeLlm: LLMProvider;
   embedder: EmbeddingProvider;
 } {
+  const llm = new DialLLMProvider(dialClient(cfg, cfg.chatModel), cfg.chatModel);
   return {
-    llm: new DialLLMProvider(dialClient(cfg, cfg.chatModel), cfg.chatModel),
+    llm,
+    judgeLlm:
+      cfg.judgeModel === cfg.chatModel
+        ? llm
+        : new DialLLMProvider(dialClient(cfg, cfg.judgeModel), cfg.judgeModel),
     embedder: new DialEmbeddingProvider(dialClient(cfg, cfg.embeddingModel), cfg.embeddingModel),
   };
 }

@@ -101,6 +101,44 @@ spec ("keep only what improves the numbers"), `RAG_ENHANCE` stays off by
 default; the flag and the `--compare` harness remain for future experiments
 (e.g. reranking instead of rewriting).
 
+## Model comparison (2026-07-21)
+
+The chat model is swappable per run (`DIAL_CHAT_MODEL`); to compare models fairly
+the eval judge is pinned separately via `DIAL_JUDGE_MODEL` (defaults to the chat
+model), so SC-003/SC-006 are scored by one referee instead of each model judging
+itself. Three full golden-set runs, judge = `gemini-2.5-pro` (strong and neutral
+to both compared families):
+
+| Criterion | gpt-4o | claude-sonnet-4-5 | gpt-chat-latest |
+|-----------|--------|-------------------|-----------------|
+| SC-001 Refusal accuracy (≥ 90%) | **100%** | **100%** | **75% — FAIL** |
+| SC-002 Hit-rate@5 (≥ 85%) | 100% | 100% | 100% |
+| SC-003 Fully grounded (≥ 90%) | 90.6% | **100%** | 100% |
+| SC-004 Cites expected source (≥ 90%) | 100% | 100% | 100% |
+| SC-005 Fabricated citations (= 0) | 0 | 0 | 0 |
+| SC-006 Baseline hallucinates (= yes) | yes | yes | yes |
+| **Result** | **PASS** | **PASS** | **FAIL** |
+
+Findings:
+
+- **`claude-sonnet-4-5@20250929` scores best** — the only model at 100% across
+  all criteria. `gpt-4o` (shipping default) also passes, though under the
+  stricter Gemini judge its groundedness reads 90.6% vs the 93.8% self-judged
+  figure above — right at the threshold.
+- **`gpt-chat-latest` fails refusals**: it answered 2 of 8 out-of-corpus
+  questions (German BDSG, EDPB cookie-consent guidelines) from memory instead
+  of refusing — disqualifying for a grounded-answers-only assistant.
+- Retrieval metrics are identical across all three (same embedding model), as
+  expected: the chat model only affects synthesis and refusal judgment.
+- Caveats: the personal Dial key can invoke only a small subset of the listed
+  deployments (GPT-5.x and Sonnet 5 return 403, hence `gpt-chat-latest` and
+  Sonnet 4.5 as stand-ins), and Vertex-hosted Claude routes ignore
+  `response_format` and fence JSON in markdown — handled by `stripJsonFence`
+  in `src/providers/dial.ts`.
+
+Full reports live in `evals/results/`. To adopt Sonnet 4.5, set
+`DIAL_CHAT_MODEL=claude-sonnet-4-5@20250929` — no other change needed.
+
 ## Project structure
 
 ```text

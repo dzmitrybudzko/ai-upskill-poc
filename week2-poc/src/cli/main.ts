@@ -133,8 +133,9 @@ program
   .option("--compare", "run twice — standard vs query-rewriting retrieval — and report the metric delta (US7)")
   .action(async (opts: { group?: string; k?: number; compare?: boolean }) => {
     const cfg = requireConfig();
-    const { llm, embedder } = createDialProviders(cfg);
+    const { llm, judgeLlm, embedder } = createDialProviders(cfg);
     const k = opts.k ?? cfg.k;
+    console.log(`Model under eval: ${cfg.chatModel}; judge: ${cfg.judgeModel}`);
 
     const run = (retriever: Retriever, label: string) => {
       let done = 0;
@@ -150,7 +151,7 @@ program
             console.log(`  ${String(done).padStart(2)}. ${r.question_id} [${r.group}] ${mark}`);
           },
         },
-        { retriever, llm, embedder },
+        { retriever, llm, judgeLlm, embedder },
       );
     };
 

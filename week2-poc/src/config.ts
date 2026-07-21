@@ -15,6 +15,9 @@ const EnvSchema = z.object({
   DIAL_BASE_URL: z.url({ message: "DIAL_BASE_URL must be a valid URL" }),
   DIAL_API_KEY: z.string().min(1, "DIAL_API_KEY is required"),
   DIAL_CHAT_MODEL: z.string().min(1, "DIAL_CHAT_MODEL is required"),
+  // Judge model for evals; defaults to DIAL_CHAT_MODEL. Pin it (e.g. to gpt-4o)
+  // when comparing chat models so SC-003 is scored by the same judge across runs.
+  DIAL_JUDGE_MODEL: z.string().min(1).optional(),
   DIAL_EMBEDDING_MODEL: z.string().min(1, "DIAL_EMBEDDING_MODEL is required"),
   RAG_K: z.coerce.number().int().positive().default(5),
   // Similarity floor for refusal (FR-004), calibrated on the golden set (T037):
@@ -34,6 +37,7 @@ export type Config = {
   dialBaseUrl: string;
   dialApiKey: string;
   chatModel: string;
+  judgeModel: string;
   embeddingModel: string;
   k: number;
   refusalMinScore: number;
@@ -56,6 +60,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     dialBaseUrl: e.DIAL_BASE_URL,
     dialApiKey: e.DIAL_API_KEY,
     chatModel: e.DIAL_CHAT_MODEL,
+    judgeModel: e.DIAL_JUDGE_MODEL ?? e.DIAL_CHAT_MODEL,
     embeddingModel: e.DIAL_EMBEDDING_MODEL,
     k: e.RAG_K,
     refusalMinScore: e.REFUSAL_MIN_SCORE,
