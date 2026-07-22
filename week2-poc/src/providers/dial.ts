@@ -94,6 +94,11 @@ function dialClient(cfg: Config, deployment: string): OpenAI {
     apiKey: cfg.dialApiKey,
     defaultQuery: { "api-version": DIAL_API_VERSION },
     defaultHeaders: { "Api-Key": cfg.dialApiKey },
+    // Some Dial deployments occasionally leave a connection hanging without a
+    // response; the SDK default (10 min/attempt) turns that into a zombie eval.
+    // Fail fast and let the SDK retry instead.
+    timeout: 120_000,
+    maxRetries: 3,
   });
 }
 

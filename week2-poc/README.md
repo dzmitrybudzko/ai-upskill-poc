@@ -109,15 +109,22 @@ model), so SC-003/SC-006 are scored by one referee instead of each model judging
 itself. Three full golden-set runs, judge = `gemini-2.5-pro` (strong and neutral
 to both compared families):
 
-| Criterion | gpt-4o | claude-sonnet-4-5 | gpt-chat-latest |
-|-----------|--------|-------------------|-----------------|
-| SC-001 Refusal accuracy (≥ 90%) | **100%** | **100%** | **75% — FAIL** |
-| SC-002 Hit-rate@5 (≥ 85%) | 100% | 100% | 100% |
-| SC-003 Fully grounded (≥ 90%) | 90.6% | **100%** | 100% |
-| SC-004 Cites expected source (≥ 90%) | 100% | 100% | 100% |
-| SC-005 Fabricated citations (= 0) | 0 | 0 | 0 |
-| SC-006 Baseline hallucinates (= yes) | yes | yes | yes |
-| **Result** | **PASS** | **PASS** | **FAIL** |
+| Model | Tier | SC-001 Refusal | SC-003 Grounded | Result |
+|-------|------|----------------|-----------------|--------|
+| claude-sonnet-4-5@20250929 | flagship | 100% | **100%** | **PASS** |
+| gpt-4o (shipping default) | flagship | 100% | 90.6% | PASS |
+| gpt-chat-latest | flagship | 75% | 100% | **FAIL** |
+| gemini-2.5-flash | budget | 100% | **100%** | **PASS** ¹ |
+| claude-haiku-4-5@20251001 | budget | 100% | 93.8% | **PASS** |
+| gpt-4.1-mini-2025-04-14 | budget | 87.5% | 93.9% | **FAIL** |
+| deepseek.v3.2 | budget | — | — | n/a ² |
+
+All models that finished score 100% on SC-002 (hit-rate@5), SC-004 (cites
+expected source), 0 on SC-005 (fabricated citations) and demonstrate SC-006.
+
+¹ Same family as the judge (Gemini) — a same-family-leniency caveat applies.
+² The `deepseek.v3.2` deployment consistently hangs on long synthesis requests
+  (two attempts; short probes respond in ~3 s) — excluded as a Dial-side issue.
 
 Findings:
 
@@ -125,11 +132,17 @@ Findings:
   all criteria. `gpt-4o` (shipping default) also passes, though under the
   stricter Gemini judge its groundedness reads 90.6% vs the 93.8% self-judged
   figure above — right at the threshold.
-- **`gpt-chat-latest` fails refusals**: it answered 2 of 8 out-of-corpus
-  questions (German BDSG, EDPB cookie-consent guidelines) from memory instead
-  of refusing — disqualifying for a grounded-answers-only assistant.
-- Retrieval metrics are identical across all three (same embedding model), as
-  expected: the chat model only affects synthesis and refusal judgment.
+- **`claude-haiku-4-5` is the budget find**: a budget-tier model passing the
+  full gate, including 100% refusals — the cost per answer can drop an order
+  of magnitude without losing gate quality.
+- **Both OpenAI non-flagship variants fail on refusals** (`gpt-chat-latest`
+  answered 2 of 8 out-of-corpus questions — German BDSG, EDPB cookie-consent
+  guidelines — from memory; `gpt-4.1-mini` missed 1 of 8). The
+  answer-from-memory-instead-of-refusing tendency tracks the model family, not
+  the size. Disqualifying for a grounded-answers-only assistant.
+- Retrieval metrics are identical across all models (same embedding model), as
+  expected: the chat model only affects synthesis and refusal judgment — which
+  is exactly where the system's quality ceiling lives.
 - Caveats: the personal Dial key can invoke only a small subset of the listed
   deployments (GPT-5.x and Sonnet 5 return 403, hence `gpt-chat-latest` and
   Sonnet 4.5 as stand-ins), and Vertex-hosted Claude routes ignore
