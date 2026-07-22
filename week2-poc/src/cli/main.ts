@@ -172,6 +172,35 @@ program
   });
 
 program
+  .command("rejudge")
+  .description("Re-score saved answers from an eval report with other judge models (no regeneration)")
+  .option("--report <path>", "eval report JSON (default: latest in evals/results)")
+  .requiredOption("--judges <models>", "comma-separated judge deployment names")
+  .action(async (opts: { report?: string; judges: string }) => {
+    const cfg = requireConfig();
+    const { latestReportPath, loadReport, rejudgeReport, agreementSummary, formatAgreement, saveRejudgeReport } =
+      await import("../eval/rejudge.js");
+    const reportPath = opts.report ?? latestReportPath();
+    const report = loadReport(reportPath);
+    console.log(`Re-judging ${report.cases.filter((c) => c.produced === "answer").length} answered cases from ${reportPath}`);
+
+    const runs = [];
+    for (const model of opts.judges.split(",").map((m) => m.trim()).filter(Boolean)) {
+      const { judgeLlm } = createDialProviders({ ...cfg, judgeModel: model });
+      let done = 0;
+      console.log(`\n=== judge: ${model} ===`);
+      runs.push(
+        await rejudgeReport(report, judgeLlm, {
+          onCase: (id) => console.log(`  ${String(++done).padStart(2)}. ${id}`),
+        }),
+      );
+    }
+    const summary = agreementSummary(runs);
+    console.log(formatAgreement(summary, reportPath));
+    console.log(`\nSaved: ${saveRejudgeReport(reportPath, runs, summary)}`);
+  });
+
+program
   .command("web")
   .description("Serve the minimal local web UI over the same answer() path (US8)")
   .option("--port <n>", "port to listen on", (v) => parseInt(v, 10), 3000)

@@ -46,6 +46,10 @@ export interface EvalCaseResult {
   question_id: string;
   group: GoldenQuestion["group"];
   produced: "answer" | "refuse";
+  /** Verbatim answer/refusal text + retrieved chunk ids, so saved reports can
+   *  be re-judged by another model without regenerating (rejudge.ts). */
+  answer_text: string | null;
+  retrieved_ids: string[];
   behavior_match: boolean;
   hit_at_k: boolean | null; // null when no expected sources (refusal group)
   reciprocal_rank: number | null;
@@ -184,6 +188,8 @@ export async function runEval(
         question_id: q.id,
         group: q.group,
         produced,
+        answer_text: res.text,
+        retrieved_ids: res.retrieved.map((r) => r.chunk.id),
         behavior_match: produced === q.expected_behavior,
         hit_at_k: hasExpected ? hitAtK(q.expected_sources, res.retrieved) : null,
         reciprocal_rank: hasExpected ? reciprocalRank(q.expected_sources, res.retrieved) : null,
@@ -200,6 +206,8 @@ export async function runEval(
         question_id: q.id,
         group: q.group,
         produced: "refuse",
+        answer_text: null,
+        retrieved_ids: [],
         behavior_match: false,
         hit_at_k: null,
         reciprocal_rank: null,

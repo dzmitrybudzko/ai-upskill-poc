@@ -152,6 +152,35 @@ Findings:
 Full reports live in `evals/results/`. To adopt Sonnet 4.5, set
 `DIAL_CHAT_MODEL=claude-sonnet-4-5@20250929` — no other change needed.
 
+### Judge agreement (2026-07-22)
+
+SC-003 is scored by an LLM, so the judge itself is a variable worth measuring.
+Eval reports save every answer verbatim (`answer_text` + `retrieved_ids`), and
+`npm run rejudge -- --judges <a,b,c>` re-scores those exact answers with other
+judges — no regeneration, so judge disagreement is isolated from answer
+variance. A three-family panel over one gpt-4o run (31 answered cases):
+
+| Judge | SC-003 | Mean groundedness |
+|-------|--------|-------------------|
+| gemini-2.5-pro | 96.8% | 0.995 |
+| gpt-4o | 96.8% | 0.989 |
+| claude-sonnet-4-5@20250929 | 90.3% | 0.986 |
+
+Unanimous verdicts on 93.5% of cases; SC-003 under majority vote: **96.8%**.
+
+- The judge-to-judge spread (90.3–96.8 pts) is comparable to the run-to-run
+  spread of a single judge (90.6% → 93.5% for gemini-2.5-pro across two runs of
+  the same config). The metric is stable, but **the 90% threshold sits inside
+  the noise band** — a single run near the line is not a verdict; use the
+  majority vote or a judge panel for report-grade numbers.
+- Both disagreements were Sonnet flagging alone, and both flags are defensible
+  under the rubric: one caught a definition imported from model memory (a real
+  unsupported claim the other judges missed), one a dropped "sufficiently"
+  qualifier. **Sonnet is the strictest, most rubric-literal judge available** —
+  the right single judge when a conservative bound is wanted.
+
+Full per-judge verdicts: `evals/results/rejudge-*.json`.
+
 ## Project structure
 
 ```text
