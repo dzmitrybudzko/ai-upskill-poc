@@ -29,7 +29,7 @@ export const RESULTS_DIR = join(__dirname, "..", "..", "evals", "results");
 
 const GoldenQuestion = z.object({
   id: z.string(),
-  group: z.enum(["gdpr_factual", "aiact_factual", "cross_regulation", "refusal"]),
+  group: z.enum(["gdpr_factual", "aiact_factual", "cross_regulation", "refusal", "adversarial"]),
   question: z.string(),
   expected_sources: z.array(z.string()),
   expected_behavior: z.enum(["answer", "refuse"]),
@@ -50,6 +50,8 @@ export interface EvalCaseResult {
    *  be re-judged by another model without regenerating (rejudge.ts). */
   answer_text: string | null;
   retrieved_ids: string[];
+  /** Wall-clock ms for the full answer() path (retrieve + synthesis). */
+  latency_ms: number;
   behavior_match: boolean;
   hit_at_k: boolean | null; // null when no expected sources (refusal group)
   reciprocal_rank: number | null;
@@ -80,6 +82,10 @@ export interface EvalReport {
   refusalMinScore: number;
   group?: string;
   cases: EvalCaseResult[];
+  /** Synthesis-side cost: token usage of the eval'd LLM over the cases (null
+   *  when the provider doesn't track usage) and answer-path latency. */
+  usage: { model: string; calls: number; promptTokens: number; completionTokens: number } | null;
+  meanLatencyMs: number;
   perGroup: Record<string, { count: number; behavior_accuracy: number; hit_rate: number | null; mrr: number | null }>;
   baselineChecks: BaselineCheck[];
   criteria: Criterion[];
@@ -176,7 +182,12 @@ export async function runEval(
     throw new Error(`No golden questions match group "${opts.group}"`);
   }
 
+  // Synthesis-cost accounting: snapshot before the cases, delta afterwards
+  // (baseline checks below reuse the same LLM and must not count).
+  const statsBefore = deps.llm.stats ? { ...deps.llm.stats } : null;
+
   const cases = await mapPool(questions, opts.concurrency ?? 4, async (q): Promise<EvalCaseResult> => {
+    const t0 = Date.now();
     try {
       const res = await answer(
         { question: q.question, k: opts.k, refusalMinScore: opts.refusalMinScore },
@@ -190,6 +201,7 @@ export async function runEval(
         produced,
         answer_text: res.text,
         retrieved_ids: res.retrieved.map((r) => r.chunk.id),
+        latency_ms: Date.now() - t0,
         behavior_match: produced === q.expected_behavior,
         hit_at_k: hasExpected ? hitAtK(q.expected_sources, res.retrieved) : null,
         reciprocal_rank: hasExpected ? reciprocalRank(q.expected_sources, res.retrieved) : null,
@@ -208,6 +220,7 @@ export async function runEval(
         produced: "refuse",
         answer_text: null,
         retrieved_ids: [],
+        latency_ms: Date.now() - t0,
         behavior_match: false,
         hit_at_k: null,
         reciprocal_rank: null,
@@ -220,6 +233,16 @@ export async function runEval(
       return result;
     }
   });
+
+  const usage =
+    deps.llm.stats && statsBefore
+      ? {
+          model: deps.llm.model,
+          calls: deps.llm.stats.calls - statsBefore.calls,
+          promptTokens: deps.llm.stats.promptTokens - statsBefore.promptTokens,
+          completionTokens: deps.llm.stats.completionTokens - statsBefore.completionTokens,
+        }
+      : null;
 
   const perGroup: EvalReport["perGroup"] = {};
   for (const group of [...new Set(cases.map((c) => c.group))]) {
@@ -305,6 +328,8 @@ export async function runEval(
     refusalMinScore: opts.refusalMinScore,
     group: opts.group,
     cases,
+    usage,
+    meanLatencyMs: mean(cases.map((c) => c.latency_ms)) ?? 0,
     perGroup,
     baselineChecks,
     criteria,
@@ -366,6 +391,18 @@ export function formatReport(report: EvalReport): string {
     const mrr = g.mrr === null ? " n/a" : g.mrr.toFixed(2);
     lines.push(
       `  ${group.padEnd(18)} n=${String(g.count).padEnd(3)} behavior ${(g.behavior_accuracy * 100).toFixed(0).padStart(3)}%  hit@${report.k} ${hit}  MRR ${mrr}`,
+    );
+  }
+  lines.push("");
+  lines.push(`Latency: mean ${(report.meanLatencyMs / 1000).toFixed(1)}s per question (answer path, k=${report.k})`);
+  if (report.usage) {
+    const perCall =
+      report.usage.calls === 0
+        ? "n/a"
+        : Math.round((report.usage.promptTokens + report.usage.completionTokens) / report.usage.calls);
+    lines.push(
+      `Synthesis usage (${report.usage.model}): ${report.usage.calls} calls, ` +
+        `${report.usage.promptTokens} prompt + ${report.usage.completionTokens} completion tokens (~${perCall}/call)`,
     );
   }
   lines.push("");

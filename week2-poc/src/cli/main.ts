@@ -11,6 +11,7 @@
 import { Command } from "commander";
 import { loadConfig, type Config } from "../config.js";
 import { createDialProviders } from "../providers/dial.js";
+import { createOllamaLLM } from "../providers/ollama.js";
 import { loadCorpus } from "../corpus/corpus.js";
 import { buildIndex, INDEX_PATH } from "../retrieval/build-index.js";
 import { retrieve } from "../retrieval/retriever.js";
@@ -23,6 +24,15 @@ import type { LLMProvider } from "../providers/types.js";
 /** RAG_ENHANCE=true swaps in the query-rewriting retriever (US7, FR-012). */
 function pickRetriever(cfg: Config, llm: LLMProvider): Retriever {
   return cfg.enhance ? makeEnhancedRetriever(llm) : retrieve;
+}
+
+/**
+ * LLM_PROVIDER=ollama swaps the synthesis LLM for a local model (assignment
+ * worst-case); embeddings and the eval judge stay on Dial.
+ */
+function createProviders(cfg: Config) {
+  const dial = createDialProviders(cfg);
+  return cfg.provider === "ollama" ? { ...dial, llm: createOllamaLLM(cfg) } : dial;
 }
 
 /** Missing/invalid DIAL_* env → fail fast, never a silent fallback (cli.md). */
@@ -45,7 +55,7 @@ program
   .option("--force", "rebuild even if an index already exists (build always overwrites)")
   .action(async () => {
     const cfg = requireConfig();
-    const { embedder } = createDialProviders(cfg);
+    const { embedder } = createProviders(cfg);
     const corpus = loadCorpus();
     console.log(`Embedding ${corpus.length} chunks with ${embedder.model}…`);
     const { count } = await buildIndex(corpus, embedder, {
@@ -68,7 +78,7 @@ program
       console.error(`--reg must be GDPR or AI_ACT (got "${opts.reg}")`);
       process.exit(1);
     }
-    const { llm, embedder } = createDialProviders(cfg);
+    const { llm, embedder } = createProviders(cfg);
     const res = await answer(
       {
         question,
@@ -102,7 +112,7 @@ program
   .argument("<question>", "natural-language question about the GDPR or the EU AI Act")
   .action(async (question: string) => {
     const cfg = requireConfig();
-    const { llm, embedder } = createDialProviders(cfg);
+    const { llm, embedder } = createProviders(cfg);
     const [rag, noRag] = await Promise.all([
       answer(
         { question, k: cfg.k, refusalMinScore: cfg.refusalMinScore },
@@ -128,14 +138,14 @@ program
 program
   .command("eval")
   .description("Run the golden set and gate on the Success Criteria (exits non-zero on failure)")
-  .option("--group <name>", "run one group only (gdpr_factual | aiact_factual | cross_regulation | refusal)")
+  .option("--group <name>", "run one group only (gdpr_factual | aiact_factual | cross_regulation | refusal | adversarial)")
   .option("-k <n>", "retrieval depth", (v) => parseInt(v, 10))
   .option("--compare", "run twice — standard vs query-rewriting retrieval — and report the metric delta (US7)")
   .action(async (opts: { group?: string; k?: number; compare?: boolean }) => {
     const cfg = requireConfig();
-    const { llm, judgeLlm, embedder } = createDialProviders(cfg);
+    const { llm, judgeLlm, embedder } = createProviders(cfg);
     const k = opts.k ?? cfg.k;
-    console.log(`Model under eval: ${cfg.chatModel}; judge: ${cfg.judgeModel}`);
+    console.log(`Model under eval: ${llm.model}; judge: ${judgeLlm.model}`);
 
     const run = (retriever: Retriever, label: string) => {
       let done = 0;
@@ -206,7 +216,7 @@ program
   .option("--port <n>", "port to listen on", (v) => parseInt(v, 10), 3000)
   .action(async (opts: { port: number }) => {
     const cfg = requireConfig();
-    const { llm, embedder } = createDialProviders(cfg);
+    const { llm, embedder } = createProviders(cfg);
     const { startWebServer } = await import("../web/server.js");
     await startWebServer(cfg, { retriever: pickRetriever(cfg, llm), llm, embedder }, opts.port);
   });

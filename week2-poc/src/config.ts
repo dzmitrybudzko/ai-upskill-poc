@@ -31,6 +31,12 @@ const EnvSchema = z.object({
     .string()
     .optional()
     .transform((v) => v === "true" || v === "1"),
+  // Chat-LLM provider (assignment worst-case fallback): "ollama" swaps the
+  // SYNTHESIS model for a local one; embeddings and the eval judge stay on
+  // Dial, so retrieval and scoring are unchanged.
+  LLM_PROVIDER: z.enum(["dial", "ollama"]).default("dial"),
+  OLLAMA_BASE_URL: z.url().default("http://localhost:11434"),
+  OLLAMA_CHAT_MODEL: z.string().default("qwen3:4b"),
 });
 
 export type Config = {
@@ -42,6 +48,9 @@ export type Config = {
   k: number;
   refusalMinScore: number;
   enhance: boolean;
+  provider: "dial" | "ollama";
+  ollamaBaseUrl: string;
+  ollamaChatModel: string;
 };
 
 /** Load and validate configuration from the environment (.env supported). */
@@ -65,5 +74,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     k: e.RAG_K,
     refusalMinScore: e.REFUSAL_MIN_SCORE,
     enhance: e.RAG_ENHANCE,
+    provider: e.LLM_PROVIDER,
+    ollamaBaseUrl: e.OLLAMA_BASE_URL,
+    ollamaChatModel: e.OLLAMA_CHAT_MODEL,
   };
 }

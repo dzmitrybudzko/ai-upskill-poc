@@ -10,7 +10,7 @@
 
 import OpenAI from "openai";
 import type { Config } from "../config.js";
-import { type EmbeddingProvider, type LLMProvider, ProviderError } from "./types.js";
+import { type EmbeddingProvider, type LLMProvider, type LLMUsageStats, ProviderError } from "./types.js";
 
 /**
  * Some Dial routes (e.g. Vertex-hosted Claude) ignore `response_format` and
@@ -23,6 +23,8 @@ export function stripJsonFence(raw: string): string {
 }
 
 class DialLLMProvider implements LLMProvider {
+  readonly stats: LLMUsageStats = { calls: 0, promptTokens: 0, completionTokens: 0 };
+
   constructor(
     private readonly client: OpenAI,
     readonly model: string,
@@ -46,6 +48,9 @@ class DialLLMProvider implements LLMProvider {
           { role: "user", content: input.user },
         ],
       });
+      this.stats.calls += 1;
+      this.stats.promptTokens += res.usage?.prompt_tokens ?? 0;
+      this.stats.completionTokens += res.usage?.completion_tokens ?? 0;
       const content = res.choices[0]?.message?.content;
       if (!content) {
         throw new ProviderError(`Dial chat completion returned no content (model ${this.model})`);
@@ -108,13 +113,11 @@ export function createDialProviders(cfg: Config): {
   judgeLlm: LLMProvider;
   embedder: EmbeddingProvider;
 } {
-  const llm = new DialLLMProvider(dialClient(cfg, cfg.chatModel), cfg.chatModel);
+  // judgeLlm is always a distinct instance (even for the same deployment) so
+  // its usage stats never pollute the synthesis LLM's cost accounting.
   return {
-    llm,
-    judgeLlm:
-      cfg.judgeModel === cfg.chatModel
-        ? llm
-        : new DialLLMProvider(dialClient(cfg, cfg.judgeModel), cfg.judgeModel),
+    llm: new DialLLMProvider(dialClient(cfg, cfg.chatModel), cfg.chatModel),
+    judgeLlm: new DialLLMProvider(dialClient(cfg, cfg.judgeModel), cfg.judgeModel),
     embedder: new DialEmbeddingProvider(dialClient(cfg, cfg.embeddingModel), cfg.embeddingModel),
   };
 }

@@ -14,6 +14,13 @@ export interface EmbeddingProvider {
   readonly model: string;
 }
 
+/** Cumulative call/token accounting for cost reporting (optional capability). */
+export interface LLMUsageStats {
+  calls: number;
+  promptTokens: number;
+  completionTokens: number;
+}
+
 export interface LLMProvider {
   /** Single-turn completion for answer synthesis and judging. */
   complete(input: {
@@ -23,6 +30,8 @@ export interface LLMProvider {
     responseFormat?: "text" | "json";
   }): Promise<string>;
   readonly model: string;
+  /** Present when the implementation tracks usage; mutated in place per call. */
+  readonly stats?: LLMUsageStats;
 }
 
 /**

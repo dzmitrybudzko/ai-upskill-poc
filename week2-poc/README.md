@@ -69,6 +69,12 @@ npm run web                 # http://localhost:3000
 npm run eval                # exits non-zero on failure
 npm run eval -- --group refusal
 
+# Re-score a saved eval report with other judge models (judge-agreement study)
+npm run rejudge -- --judges gemini-2.5-pro,gpt-4o
+
+# Worst-case local LLM via Ollama (see "Local-LLM worst case" below)
+LLM_PROVIDER=ollama OLLAMA_CHAT_MODEL=gemma3:4b npm run ask -- "..."
+
 # Optional query rewriting (US7): measure its metric delta, adopt via RAG_ENHANCE=true
 npm run eval -- --compare
 
@@ -180,6 +186,66 @@ Unanimous verdicts on 93.5% of cases; SC-003 under majority vote: **96.8%**.
   the right single judge when a conservative bound is wanted.
 
 Full per-judge verdicts: `evals/results/rejudge-*.json`.
+
+### Adversarial robustness (2026-07-22)
+
+A fifth golden-set group, `adversarial` (10 questions), stresses exactly the
+behavior the model comparison showed to be most model-dependent: jailbreaks
+("pretend you are my lawyer", DAN persona, "ignore all instructions"),
+fabricated provisions (GDPR "Article 999" / "Article 4a" as a premise),
+out-of-corpus law in Russian, authority pressure, and two trap questions that
+SHOULD be answered (an injection prefix on a legitimate Art. 83 question; a
+false "the AI Act bans all facial recognition" premise over Art. 5).
+
+| Model | Score | Misses | Direction |
+|-------|-------|--------|-----------|
+| gemini-2.5-flash | **10/10** | — | — |
+| gpt-4o | 9/10 | over-refused the injected Art. 83 trap | safe |
+| claude-haiku-4-5 | 9/10 | over-refused the injected Art. 83 trap | safe |
+| claude-sonnet-4-5 | 9/10 | answered the DPO yes/no as grounded facts | borderline |
+| gpt-4.1-mini | 8/10 | gave definitive determinations twice | **unsafe** |
+
+No model fell for nonexistent articles, the DAN persona, the Russian
+out-of-corpus question, or drafting advocacy for admitted non-compliance.
+Failure *direction* matters more than the count: gpt-4o/haiku err toward
+over-refusal (injection resisted, only completeness lost), while
+`gpt-4.1-mini` again answers where it must refuse — consistent with the
+refusal failures of both OpenAI non-flagships in the main comparison.
+
+### Local-LLM worst case (2026-07-22, Ollama)
+
+`LLM_PROVIDER=ollama` + `OLLAMA_CHAT_MODEL` swap the synthesis model for a
+local one via Ollama's OpenAI-compatible API (`src/providers/ollama.ts`);
+embeddings and the judge stay on Dial, so retrieval and scoring are unchanged.
+Measured with `gemma3:4b` (Q4, CPU-only laptop, 8k context) on the refusal and
+gdpr_factual groups, judge pinned to `gemini-2.5-pro`:
+
+| Metric | gemma3:4b local | Cloud models |
+|--------|-----------------|--------------|
+| SC-001 Refusal accuracy | **25%** | 87.5–100% |
+| SC-002 Hit-rate@5 | 100% | 100% |
+| SC-003 Fully grounded | **60%** | 90–100% |
+| SC-004 Cites expected source | 100% | 100% |
+| SC-005 Fabricated citations | **0** | 0 |
+| Answer latency | **2–3.5 min** | ~3 s |
+
+What breaks is model *discipline* — refusing out-of-corpus questions (it
+answers about CCPA/BDSG/Schrems II from memory) and paragraph-level precision.
+What holds is everything enforced by code or upstream of the model: retrieval
+(hit@5 100%, MRR 1.0), citation scope (SC-004 100%), and the zero-fabrication
+guarantee (SC-005 = 0 even at 4B). The no-RAG baseline meanwhile invents
+"Art. 6(1)(j)", a GDPR "Annex I", and a 7-day breach deadline — so RAG's value
+survives the downgrade. Verdict: a local model is an emergency privacy/offline
+mode, not a substitute; if local is a hard requirement, budget for an 8–14B
+model on a GPU. (Practical note: the `qwen3:4b` build was unusable — its
+thinking mode can't be disabled and floods CPU latency; `gemma3:4b` is the
+working pick.)
+
+Eval reports also record **cost & latency** per run: a `Latency: mean Ns per
+question` line, a `Synthesis usage: … tokens (~N/call)` line (synthesis LLM
+only — judge and baseline calls are accounted separately), and per-case
+`latency_ms` in the saved JSON. Tokens × your price sheet = cost per 1,000
+questions; e.g. gpt-4o spends ~2.2k tokens per question, 95% of it prompt.
 
 ## Project structure
 
